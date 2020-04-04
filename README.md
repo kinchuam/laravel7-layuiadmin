@@ -10,6 +10,10 @@
 - php artisan key:generate
 - 后台地址： 域名/admin
 
+使用全文搜索 需要在env 添加这两行
+- SCOUT_DRIVER=tntsearch
+- SCOUT_QUEUE=true
+
 ## 图片展示
 - 后台主页
 ![Image text](https://raw.githubusercontent.com/kinchuam/laravel7-layuiadmin/master/public/images/11.png?raw=true)
