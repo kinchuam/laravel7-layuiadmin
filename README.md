@@ -8,7 +8,7 @@
 - php artisan migrate
 - php artisan db:seed
 - php artisan key:generate
-
+- 后台地址： 域名/admin
 
 ## 图片展示
 - 后台主页
