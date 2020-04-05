@@ -10,12 +10,12 @@
 - php artisan key:generate
 - 后台地址： 域名/admin
 
-使用全文搜索 需要在env 添加这两行
+#### 全文搜索需要在.env 添加这两行
 - SCOUT_DRIVER=tntsearch
 - SCOUT_QUEUE=true
 
 ## 图片展示
-- 后台主页
+- 主页
 ![Image text](https://raw.githubusercontent.com/kinchuam/laravel7-layuiadmin/master/public/images/11.png?raw=true)
 - 用户
 ![Image text](https://raw.githubusercontent.com/kinchuam/laravel7-layuiadmin/master/public/images/12.png?raw=true)
@@ -23,6 +23,6 @@
 ![Image text](https://raw.githubusercontent.com/kinchuam/laravel7-layuiadmin/master/public/images/13.png?raw=true)
 - 日志
 ![Image text](https://raw.githubusercontent.com/kinchuam/laravel7-layuiadmin/master/public/images/14.png?raw=true)
-
+- 设置
 ![Image text](https://raw.githubusercontent.com/kinchuam/laravel7-layuiadmin/master/public/images/15.png?raw=true)
 # laravel7-layuiadmin
