@@ -3,10 +3,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Venturecraft\Revisionable\RevisionableTrait;
 
 class Attachment extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes,RevisionableTrait;
     protected $table = 'attachment';
     protected $fillable = ['filename','path','suffix','group_id','type','size','uuid','storage','file_url'];
     protected $casts = [

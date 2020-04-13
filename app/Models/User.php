@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use Venturecraft\Revisionable\RevisionableTrait;
 
 class User extends Authenticatable
 {
-    use Notifiable,HasRoles;
+    use Notifiable,HasRoles,RevisionableTrait;
     protected $table = 'users';
     protected $guard_name = 'admin';
     protected $casts = [

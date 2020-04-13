@@ -18,11 +18,11 @@
         "laravel/tinker": "^2.0",
         "laravel/ui": "^2.0",
         "linfo/linfo": "^4.0",
-        "predis/predis": "^1.1",
         "rap2hpoutre/laravel-log-viewer": "^1.4",
         "spatie/laravel-activitylog": "^3.13",
         "spatie/laravel-permission": "^3.11",
         "teamtnt/laravel-scout-tntsearch-driver": "^8.1",
+        "venturecraft/revisionable": "^1.34",
         "zgldh/qiniu-laravel-storage": "^0.10.3"
     },
     "require-dev": {

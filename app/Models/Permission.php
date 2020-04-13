@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use Venturecraft\Revisionable\RevisionableTrait;
+
 class Permission extends \Spatie\Permission\Models\Permission
 {
+    use RevisionableTrait;
     protected $guard_name = 'admin';
     protected $casts = [
         'created_at' => 'datetime:Y-m-d H:i:s',

@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Scout\Searchable;
+use Venturecraft\Revisionable\RevisionableTrait;
 
 class Article extends Model
 {
-    use SoftDeletes,Searchable;
+    use SoftDeletes,Searchable,RevisionableTrait;
     protected $fillable = [
         'category_id','title','tags','keywords','description','content','thumb','click','author','status','sort','ishelp','ishome','created_at'
     ];

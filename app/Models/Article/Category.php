@@ -3,9 +3,11 @@
 namespace App\Models\Article;
 
 use Illuminate\Database\Eloquent\Model;
+use Venturecraft\Revisionable\RevisionableTrait;
 
 class Category extends Model
 {
+    use RevisionableTrait;
     protected $table = 'article_category';
     protected $fillable = ['name','sort','parent_id'];
     protected $attributes = [

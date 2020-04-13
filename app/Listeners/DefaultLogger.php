@@ -10,17 +10,11 @@ class DefaultLogger
     {
         $topic = $event->model;
         $causedUser = $event->user;
-        if (request()->route())
+
+        $position = request()->route()->getName();
+        if (!empty($position))
         {
-            $arr = request()->route()->gatherMiddleware();
-            if (is_array($arr)) {
-                $a = end($arr);
-                $b = explode(':',$a);
-                if (is_array($b) && isset($b[0]) && $b[0] == 'permission') {
-                    $logname = $b[1];
-                    activity()->inLog($logname)->performedOn($topic)->causedBy($causedUser)->withProperties($event->content)->log($event->title);
-                }
-            }
+            activity()->inLog($position)->performedOn($topic)->causedBy($causedUser)->withProperties($event->content)->log($event->title);
         }
 
     }

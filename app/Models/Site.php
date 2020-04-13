@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Venturecraft\Revisionable\RevisionableTrait;
 
 class Site extends Model
 {
+    use RevisionableTrait;
     protected $table = 'sites';
     protected $fillable = ['key', 'value'];
     //获取

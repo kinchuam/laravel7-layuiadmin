@@ -49,8 +49,10 @@
                     ,url: "{{ route('admin.operation.data') }}"
                     ,page: true
                     ,cols: [[
-                        {field: 'username', title: '用户'}
-                        ,{field: 'log_name', title: '名称'}
+                        {field: 'username', title: '用户', templet: function (d) {
+                                return (d.user.name||'未知用户');
+                            }}
+                        ,{field: 'log_name', title: '位置'}
                         ,{field: 'description', title: '描述'}
                         ,{field: 'subject_type',title:'操作模型'}
                         ,{field: 'created_at', title: '创建时间'}

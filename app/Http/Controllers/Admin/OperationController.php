@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Operation;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Spatie\Activitylog\Models\Activity;
+use Venturecraft\Revisionable\Revision;
 
 class OperationController extends Controller
 {
@@ -17,7 +19,7 @@ class OperationController extends Controller
      */
     public function index()
     {
-        $users = User::select()->get();
+        $users = User::query()->get();
         return view('admin.logs.operation.index',compact('users'));
     }
 
@@ -27,13 +29,11 @@ class OperationController extends Controller
      */
     public function data(Request $request)
     {
-        $model = Activity::query();
+        $model = Operation::query();
 
-        $res = $model->orderBy('id','desc')->paginate($request->get('limit',30))->toArray();
+        $res = $model->with('user:id,name')->orderBy('id','desc')->paginate($request->get('limit',30))->toArray();
         foreach ($res['data'] as &$row) {
-            $user = User::select('name')->where('id',$row['causer_id'])->first();
             $row['created_at'] = Carbon::parse($row['created_at'])->format('Y-m-d H:i:s');
-            $row['username'] = $user['name']??"未知用户";
             $a = json_encode($row['properties'],JSON_UNESCAPED_UNICODE);
             $row['code'] = "{$a}";
         }
