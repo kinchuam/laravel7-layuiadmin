@@ -11,12 +11,13 @@ class DefaultLogger
         $topic = $event->model;
         $causedUser = $event->user;
 
-        $position = request()->route()->getName();
-        if (!empty($position))
-        {
-            activity()->inLog($position)->performedOn($topic)->causedBy($causedUser)->withProperties($event->content)->log($event->title);
+        if (request()->route()) {
+            $position = request()->route()->getName();
+            if (!empty($position))
+            {
+                activity()->inLog($position)->performedOn($topic)->causedBy($causedUser)->withProperties($event->content)->log($event->title);
+            }
         }
-
     }
 
 }
