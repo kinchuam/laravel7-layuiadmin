@@ -2,13 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\Operation;
+use App\Models\Activitylog;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Spatie\Activitylog\Models\Activity;
-use Venturecraft\Revisionable\Revision;
 
 class OperationController extends Controller
 {
@@ -19,7 +16,7 @@ class OperationController extends Controller
      */
     public function index()
     {
-        $users = User::query()->get();
+        $users = User::query()->get(['id','name']);
         return view('admin.logs.operation.index',compact('users'));
     }
 
@@ -29,15 +26,11 @@ class OperationController extends Controller
      */
     public function data(Request $request)
     {
-        $model = Operation::query();
+        $model = Activitylog::query()->select(['id','log_name','description','causer_id','subject_type','created_at']);
 
-        $res = $model->with('user:id,name')->orderBy('id','desc')->paginate($request->get('limit',30))->toArray();
-        foreach ($res['data'] as &$row) {
-            $row['created_at'] = Carbon::parse($row['created_at'])->format('Y-m-d H:i:s');
-            $a = json_encode($row['properties'],JSON_UNESCAPED_UNICODE);
-            $row['code'] = "{$a}";
-        }
-        unset($row);
+        $res = $model->with('user:id,name')
+            ->orderBy('id','desc')->paginate($request->get('limit',30))->toArray();
+
         $data = [
             'code' => 0,
             'msg'   => '正在请求中...',

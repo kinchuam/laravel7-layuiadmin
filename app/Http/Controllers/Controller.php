@@ -11,14 +11,35 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
+    public function escape_like($value, $char = '\\')
+    {
+        return str_replace(
+            [$char, '%', '_'],
+            [$char.$char, $char.'%', $char.'_'],
+            $value
+        );
+    }
+
+    public function app_json($data = [],$status = 0)
+    {
+        $ret = [];
+        if (!isset($data['error'])){
+            $ret["error"] = 0;
+        }
+        if (!isset($data['message'])){
+            $ret["message"] = 'succeed';
+        }
+        if ($status>0){
+            return response()->json(array_merge($ret, $data),$status);
+        }
+        return response()->json(array_merge($ret, $data));
+    }
+
     /**
      * 处理权限分类
      */
     public function tree($list=[], $pk='id', $pid = 'parent_id', $child = '_child', $root = 0)
     {
-        if (empty($list)){
-            $list = \App\Models\Permission::get()->toArray();
-        }
         // 创建Tree
         $tree = array();
         if(is_array($list)) {
@@ -42,4 +63,5 @@ class Controller extends BaseController
         }
         return $tree;
     }
+
 }

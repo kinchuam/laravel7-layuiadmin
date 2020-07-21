@@ -7,6 +7,7 @@ use App\Http\Requests\PermissionUpdateRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
+use Illuminate\Support\Arr;
 
 class PermissionController extends Controller
 {
@@ -21,6 +22,39 @@ class PermissionController extends Controller
         return view('admin.permission.index');
     }
 
+    public function get_lists(Request $request)
+    {
+        $parent_id = $request->get('parent_id',0);
+        $id = $request->get('id',0);
+        $type = $request->get('type','');
+        $model = Permission::query();
+        if ($id > 0) {
+            $model = $model->where('id','<>',$id);
+        }
+        $list = $model->get(['id','display_name','parent_id'])->toArray();
+        foreach ($list as &$row)
+        {
+            $row['selected'] = false;
+            $row['name'] = $row['display_name'];
+            if ($parent_id > 0 && $parent_id == $row['id']) {
+                $row['selected'] = true;
+            }
+            $row['value'] = $row['id'];
+        }
+        unset($row);
+        $list = $this->tree($list,'id','parent_id','children');
+        if ($type == 'permission') {
+            $arr = ['value'=>0,'selected'=>false,'name'=>'顶级权限','parent_id'=>0];
+            if (empty($parent_id)) {
+                $arr['selected'] = true;
+            }
+            $list = Arr::prepend($list,$arr);
+        }
+        return response()->json([
+            'data' => $list
+        ]);
+    }
+
     /**
      * Show the form for creating a new resource.
      *
@@ -28,8 +62,7 @@ class PermissionController extends Controller
      */
     public function create()
     {
-        $permissions = $this->tree();
-        return view('admin.permission.create',compact('permissions'));
+        return view('admin.permission.create');
     }
 
 
@@ -43,7 +76,15 @@ class PermissionController extends Controller
     {
         $data = $request->all();
         if (Permission::create($data)){
-            return response()->json(['status' => 'success', 'noRefresh' => false, 'fromdata' => ['parent_id'=>$data['parent_id'],'model'=>'permission'], 'message' => '添加成功']);
+            return response()->json([
+                'status' => 'success',
+                'noRefresh' => false,
+                'fromdata' => [
+                    'parent_id'=>$data['parent_id'],
+                    'model'=>'permission'
+                ],
+                'message' => '添加成功'
+            ]);
         }
         return response()->json(['status' => 'fail', 'message' => '系统错误']);
     }
@@ -58,8 +99,7 @@ class PermissionController extends Controller
     public function edit($id)
     {
         $permission = Permission::findOrFail($id);
-        $permissions = $this->tree();
-        return view('admin.permission.edit',compact('permission','permissions'));
+        return view('admin.permission.edit',compact('permission'));
     }
     /**
      * Update the specified resource in storage.
@@ -73,7 +113,14 @@ class PermissionController extends Controller
         $permission = Permission::findOrFail($id);
         $data = $request->all();
         if ($permission->update($data)){
-            return response()->json(['status' => 'success', 'noRefresh' => false, 'fromdata' => ['parent_id'=>$permission['parent_id'],'model'=>'permission'], 'message' => '更新权限成功']);
+            return response()->json([
+                'status' => 'success',
+                'noRefresh' => false,
+                'fromdata' => [
+                    'parent_id'=>$permission['parent_id'],
+                    'model'=>'permission'],
+                'message' => '更新权限成功'
+            ]);
         }
         return response()->json(['status' => 'fail', 'message' => '系统错误']);
     }

@@ -22,7 +22,7 @@
             </script>
             <script type="text/html" id="options">
                 <div class="layui-btn-group">
-                    <a class="layui-btn layui-btn-sm layui-btn-normal copy" lay-event="copy" data-clipboard-text="@{{ d.file_url }}">复制链接</a>
+                    <a class="layui-btn layui-btn-sm layui-btn-normal copy" lay-event="copy" data-clipboard-text="@{{ d.path }}">复制链接</a>
                     <a class="layui-btn layui-btn-sm" lay-event="download">下载</a>
                     @can('content.files.destroy')
                         <a class="layui-btn layui-btn-danger layui-btn-sm" lay-event="del">删除</a>
@@ -63,19 +63,18 @@
                     ,page: true
                     ,cols: [[
                         {checkbox: true,fixed: true}
-                        ,{field: 'id', title: 'ID', sort: true,width:90}
                         ,{field: 'filename', title: '文件名'}
-                        ,{field: 'size', title: '文件大小',templet:function (d) { return layui.laytpl.getfilesize(d.size);},width: 180}
+                        ,{field: 'size', title: '文件大小',templet:function (d) { return layui.laytpl.getfilesize(d.size);},width: 120}
                         ,{field: 'storage', title: '储存方式',width: 100}
                         ,{field: 'type', title: '文件类型',width: 180, templet: function (d) {
-                              var html = '<a href="JavaScript:;" title="点击查看">\n';
-                              if (d.suffix === 'png' || d.suffix === 'gif' || d.suffix === 'jpg' || d.suffix === 'image'){
-                                  html += '<img src="'+d.file_url+'" style="vertical-align:middle;" alt="'+d.filename+'" width="28" height="28" onerror="this.src=\'{{asset('static/admin/img/nopic.png')}}\'"> '+d.type+' \n';
-                              }else{
-                                  html += '<img src="{{asset('static/admin/img/ico')}}/'+d.suffix+'.png" style="vertical-align:middle;" alt="'+d.filename+'" width="28" height="28" onerror="this.src=\'{{asset('static/admin/img/nopic.png')}}\'"> '+d.type+' \n';
-                              }
-                               html += '</a>';
-                              return html;
+                                var html = '<a href="JavaScript:;" title="点击查看">\n',str = d.type;
+                                if ( str.indexOf("image") != -1 ){
+                                    html += '<img src="'+d.path+'" style="vertical-align:middle;" alt="'+d.filename+'" width="28" height="28" onerror="this.src=\'{{asset('static/admin/img/nopic.png')}}\'"> '+d.type+' \n';
+                                }else{
+                                    html += '<img src="{{asset('static/admin/img/ico')}}/'+d.suffix+'.png" style="vertical-align:middle;" alt="'+d.filename+'" width="28" height="28" onerror="this.src=\'{{asset('static/admin/img/nopic.png')}}\'"> '+d.type+' \n';
+                                }
+                                html += '</a>';
+                                return html;
                             },event:'preview'}
                         ,{field: 'created_at', title: '创建时间',width: 190}
                         ,{fixed: 'right', width: 230, align:'center', toolbar: '#options'}
@@ -113,7 +112,7 @@
                                     photos: {
                                         title: "查看",
                                         data: [{
-                                            src: data.file_url
+                                            src: data.path
                                         }]
                                     },
                                     shade: .01,
@@ -131,7 +130,7 @@
                         });
 
                     } else if (layEvent === 'download'){
-                        download(data.file_url,data.filename);
+                        download(data.path,data.filename);
                     }
                 });
 

@@ -17,6 +17,7 @@ class CreateUsersLoginLogTable extends Migration
             $table->bigIncrements('id')->index();
             $table->uuid('uuid')->index();
             $table->string('ip',30)->nullable();
+            $table->mediumText('ipData');
             $table->text('agent');
             $table->string('message');
             $table->timestamps();

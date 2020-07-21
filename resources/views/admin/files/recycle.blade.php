@@ -4,10 +4,10 @@
     <div class="layui-card">
         <div class="layui-card-header layuiadmin-card-header-auto">
             <div class="layui-btn-group ">
-                @can('system.files.expurgate')
+                @can('content.files.expurgate')
                     <button class="layui-btn layui-btn-sm layui-btn-danger" id="listDelete">删 除</button>
                 @endcan
-                @can('system.files.recover')
+                @can('content.files.recover')
                     <button class="layui-btn layui-btn-sm" id="listRecover">恢 复</button>
                 @endcan
             </div>
@@ -16,10 +16,10 @@
             <table id="dataTable" lay-filter="dataTable"></table>
             <script type="text/html" id="options">
                 <div class="layui-btn-group">
-                    @can('system.files.recover')
+                    @can('content.files.recover')
                         <a class="layui-btn layui-btn-sm" lay-event="recover">恢复</a>
                     @endcan
-                    @can('system.files.expurgate')
+                    @can('content.files.expurgate')
                         <a class="layui-btn layui-btn-danger layui-btn-sm" lay-event="del">删除</a>
                     @endcan
                 </div>
@@ -29,7 +29,7 @@
 @endsection
 
 @section('script')
-    @can('config.site.update')
+    @can('content.files.recycle')
         <script>
 
             layui.use(['layer','table','laytpl'],function () {
@@ -56,12 +56,11 @@
                     ,page: true
                     ,cols: [[
                         {checkbox: true,fixed: true}
-                        ,{field: 'id', title: 'ID', sort: true,width:80}
                         ,{field: 'filename', title: '文件名'}
                         ,{field: 'size', title: '文件大小',templet:function (d) { return layui.laytpl.getfilesize(d.size);},width: 100}
                         ,{field: 'storage', title: '储存方式',width: 90}
                         ,{field: 'type', title: '文件类型',width: 110}
-                        ,{field: 'deleted_at', title: '删除时间',width: 160}
+                        ,{field: 'deleted_at', title: '删除时间',width: 200}
                         ,{fixed: 'right', width: 150, align:'center', toolbar: '#options'}
                     ]]
                 });

@@ -75,15 +75,15 @@ return [
             'driver'  => 'qiniu',
             'domains' => [
                 'default'   => env('QINIU_DOMAIN_DEFAULT', ''), //你的七牛域名
-                'https'     => '', //你的HTTPS域名
+                'https'     => env('QINIU_DOMAIN_HTTPS', ''), //你的HTTPS域名
                 'custom'    => '', //Useless 没啥用，请直接使用上面的 default 项
             ],
-            'access_key'=> env('QINIU_ACCESS_KEY', ''),  //AccessKey
-            'secret_key'=> env('QINIU_SECRET_KEY', ''),  //SecretKey
+            'access_key' => env('QINIU_ACCESS_KEY', ''),  //AccessKey
+            'secret_key' => env('QINIU_SECRET_KEY', ''),  //SecretKey
             'bucket'    => env('QINIU_BUCKET', ''),  //Bucket名字
-            'notify_url'=> '',  //持久化处理回调地址
-            'access'    => 'public',  //空间访问控制 public 或 private
-            'hotlink_prevention_key' => '', // CDN 时间戳防盗链的 key。 设置为 null 则不启用本功能。
+            'notify_url' => '',  //持久化处理回调地址
+            'access'    => env('QINIU_ACCESS', 'public'),  //空间访问控制 public 或 private
+            'hotlink_prevention_key' => env('QINIU_HOTLINK_PREVENTION_KEY', ''), // CDN 时间戳防盗链的 key。 设置为 null 则不启用本功能。
         ],
 
     ],

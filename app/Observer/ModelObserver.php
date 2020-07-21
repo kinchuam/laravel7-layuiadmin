@@ -3,7 +3,7 @@
 
 namespace App\Observer;
 
-use App\Events\DefaultLoggable;
+use App\Models\Activitylog;
 use Illuminate\Support\Arr;
 
 class ModelObserver
@@ -16,12 +16,13 @@ class ModelObserver
     {
         $attributes = $model->getAttributes();
         $attributes = Arr::except($attributes, ['created_at', 'updated_at']);
+        $title = ($model->desc?'【'.$model->desc.'】':'')." 新增记录[ID:".$attributes['id'].']';
+        Activitylog::addlog([
+            'model' => $model,
+            'title' => $title,
+            'content' => $attributes,
+        ]);
 
-        $baseModelName = get_class($model);
-        $title = "新增记录";
-        $content = $attributes;
-
-        event(new DefaultLoggable($title, $content, null, $model));
     }
 
     /**
@@ -31,6 +32,7 @@ class ModelObserver
     {
         $dirty = $model->getDirty();
         $original = $model->getOriginal();
+        $attributes = $model->getAttributes();
 
         // 有时候可能只要监控某些字段
         if (method_exists($model, 'limitObservedFields')) {
@@ -42,14 +44,27 @@ class ModelObserver
             $original = Arr::only($original, array_keys($dirty));
         }
 
-        if (count($dirty)) {
-            $baseModelName = get_class($model);
-            $title = "修改记录";
-            $content = $dirty;
-
-            event(new DefaultLoggable($title, $content, null, $model));
+        if (count($dirty) > 0) {
+            $title =  ($model->desc?'【'.$model->desc.'】':'')." 修改记录[ID:".$attributes['id'].']';
+            Activitylog::addlog([
+                'model' => $model,
+                'title' => $title,
+                'content' => $dirty,
+            ]);
         }
     }
+
+    public function restored($model)
+    {
+        $attributes = $model->getAttributes();
+        $title =  ($model->desc?'【'.$model->desc.'】':'')." 从回收站恢复记录[ID:".$attributes['id'].']';
+        Activitylog::addlog([
+            'model' => $model,
+            'title' => $title,
+            'content' => $attributes,
+        ]);
+    }
+
 
     /**
      * 模型删除后
@@ -57,12 +72,23 @@ class ModelObserver
     public function deleted($model)
     {
         $attributes = $model->getAttributes();
+        $title =  ($model->desc?'【'.$model->desc.'】':'')." 删除记录[ID:".$attributes['id'].']';
+        Activitylog::addlog([
+            'model' => $model,
+            'title' => $title,
+            'content' => $attributes,
+        ]);
+    }
 
-        $baseModelName = get_class($model);
-        $title = "删除记录";
-        $content = $attributes;
-
-        event(new DefaultLoggable($title, $content, null, $model));
+    public function forceDeleted($model)
+    {
+        $attributes = $model->getAttributes();
+        $title =  ($model->desc?'【'.$model->desc.'】':'')." 在回收站中删除记录[ID:".$attributes['id'].']';
+        Activitylog::addlog([
+            'model' => $model,
+            'title' => $title,
+            'content' => $attributes,
+        ]);
     }
 
 }

@@ -2,7 +2,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\PublicController;
 use App\Models\AttachmentRoup;
 use App\Models\Attachment;
 use Illuminate\Http\Request;
@@ -18,7 +17,7 @@ class FilesController extends Controller
     {
 
         if ($request->ajax()) {
-            $model = Attachment::query();
+            $model = Attachment::query()->select(['id','filename','path','suffix','type','size','group_id','storage','file_url']);;
 
             $keywords = $request->get('keywords','');
             $type = $request->get('type','');
@@ -35,7 +34,7 @@ class FilesController extends Controller
                 $model = $model->where('type', 'like', $type . '%');
             }
             // 文件列表
-            $res = $model->orderBy('created_at', 'desc')->with(['group'])->paginate($request->get('limit', 16))->toArray();
+            $res = $model->orderBy('created_at', 'desc')->with(['group:id,name'])->paginate($request->get('limit', 16))->toArray();
 
             foreach ($res['data'] as &$row){
                 $row['file_url'] = tomedia($row['path']);
@@ -53,10 +52,10 @@ class FilesController extends Controller
         }
 
         // 分组列表
-        $config = (new \App\Models\Site)->getPluginset('attachment.set');
+        $config = \App\Models\Site::getPluginset('attachment.set');
         $image_type = isset($config['image_type']) ? explode('|',$config['image_type']) : $this->image_type;
         $exts = implode('|',$image_type);
-        $group_list = AttachmentRoup::orderBy('sort', 'desc')->get();
+        $group_list = AttachmentRoup::orderBy('sort', 'desc')->get(['id','name']);
         return view('admin.files.selectfiles_v1',compact('exts','group_list'));
     }
 
@@ -119,7 +118,7 @@ class FilesController extends Controller
 
     public function create()
     {
-        $config = (new \App\Models\Site)->getPluginset('attachment.set');
+        $config = \App\Models\Site::getPluginset('attachment.set');
         $image_type = isset($config['image_type']) ? explode('|',$config['image_type']) : $this->image_type;
         $file_type = isset($config['file_type']) ? explode('|',$config['file_type']) : $this->file_type;
         $exts = array_merge($image_type,$file_type);
@@ -139,13 +138,19 @@ class FilesController extends Controller
 
     public function data(Request $request)
     {
-
-        $model = Attachment::query();
+        $model = Attachment::query()->select(['id','filename','path','suffix','type','size','group_id','storage','file_url','created_at','deleted_at']);;
 
         if (!empty($request->get('recycle',''))){
             $model = $model->onlyTrashed();
         }
-        $res = $model->orderBy('created_at','desc')->with(['group'])->paginate($request->get('limit',30))->toArray();
+        $keywords = $request->get('keywords');
+        if (!empty($keywords)){
+            $keyword = $keywords;
+            $model = $model->whereRaw("(LOCATE('".$keyword."', `filename`) > 0
+                or LOCATE('".$keyword."', `path`) > 0
+             )");
+        }
+        $res = $model->orderBy('created_at','desc')->with(['group:id,name'])->paginate($request->get('limit',30))->toArray();
         $res['data'] = set_medias($res['data'], "path");
         $data = [
             'code' => 0,
@@ -208,7 +213,7 @@ class FilesController extends Controller
         {
             return response()->download($pathToFile);
         }
-
+        exit('fail');
     }
 
 }

@@ -111,7 +111,7 @@ class RoleController extends Controller
     public function permission(Request $request,$id)
     {
         $role = Role::findOrFail($id);
-        $permissions = $this->tree();
+        $permissions = $this->tree(\App\Models\Permission::query()->get(['id','name','display_name','route','parent_id'])->toArray());
         $newarr = [];
         foreach ($permissions as $key1 => $item1){
             $permissions[$key1]['own'] = $role->hasPermissionTo($item1['id']) ? 'checked' : false ;

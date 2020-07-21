@@ -26,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        $observers = config('power.event.observers');
+        if (is_array($observers)) {
+            foreach ($observers as $observer) {
+                $observer::observe(\App\Observer\ModelObserver::class);
+            }
+        }
         User::observe(UserObserver::class);
         Schema::defaultStringLength(200);
         //左侧菜单

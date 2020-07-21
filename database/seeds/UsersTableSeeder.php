@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 
 class UsersTableSeeder extends Seeder
@@ -18,13 +19,14 @@ class UsersTableSeeder extends Seeder
         \Illuminate\Support\Facades\DB::table('model_has_roles')->truncate();
         \Illuminate\Support\Facades\DB::table('role_has_permissions')->truncate();
         \Illuminate\Support\Facades\DB::table('users')->truncate();
+        \Illuminate\Support\Facades\DB::table('users_login_log')->truncate();
         \Illuminate\Support\Facades\DB::table('roles')->truncate();
         \Illuminate\Support\Facades\DB::table('permissions')->truncate();
         \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $setdata = [
             'username' => 'root',
-            'password' => 'root123'//Str::random(10)
+            'password' => Str::random(8)
         ];
         //用户
         $user = \App\Models\User::create([
@@ -50,31 +52,6 @@ class UsersTableSeeder extends Seeder
                 'route' => '',
                 'icon' => 'layui-icon-read',
                 'child' => [
-                    [
-                        'name' => 'content.article',
-                        'display_name' => '文章管理',
-                        'route' => 'admin.article',
-                        'icon' => 'layui-icon-form',
-                        'child' => [
-                            ['name' => 'content.article.create', 'display_name' => '添加文章','route'=>'admin.article.create'],
-                            ['name' => 'content.article.edit', 'display_name' => '编辑文章','route'=>'admin.article.edit'],
-                            ['name' => 'content.article.destroy', 'display_name' => '删除文章','route'=>'admin.article.destroy'],
-                            ['name' => 'content.article.recycle', 'display_name' => '回收站','route'=>'admin.article.recycle'],
-                            ['name' => 'content.article.recover', 'display_name' => '回收站恢复','route'=>'admin.article.recover'],
-                            ['name' => 'content.article.expurgate', 'display_name' => '回收站删除','route'=>'admin.article.expurgate'],
-                        ]
-                    ],
-                    [
-                        'name' => 'content.category',
-                        'display_name' => '分类管理',
-                        'route' => 'admin.article.category',
-                        'icon' => 'layui-icon-util',
-                        'child' => [
-                            ['name' => 'content.article.category.create', 'display_name' => '添加分类','route'=>'admin.article.category.create'],
-                            ['name' => 'content.article.category.edit', 'display_name' => '编辑分类','route'=>'admin.article.category.edit'],
-                            ['name' => 'content.article.category.destroy', 'display_name' => '删除分类','route'=>'admin.article.category.destroy'],
-                        ]
-                    ],
                     [
                         'name' => 'content.files',
                         'display_name' => '附件管理',
@@ -181,28 +158,28 @@ class UsersTableSeeder extends Seeder
                         ]
                     ],
                     [
-                        'name' => 'config.site.attachment',
+                        'name' => 'config.attachment',
                         'display_name' => '上传配置',
-                        'route' => 'admin.site.attachment',
+                        'route' => 'admin.attachment',
                         'icon' => 'layui-icon-set-fill',
                         'child' => [
-                            ['name' => 'config.site.attachmentupdate', 'display_name' => '更新配置','route'=>'admin.site.attachmentupdate'],
+                            ['name' => 'config.attachment.update', 'display_name' => '更新配置','route'=>'admin.attachment.update'],
                         ]
                     ],
                     [
-                        'name' => 'config.site.optimize',
+                        'name' => 'config.optimize',
                         'display_name' => '配置信息',
-                        'route' => 'admin.site.optimize',
+                        'route' => 'admin.optimize',
                         'icon' => 'layui-icon-set-fill',
                         'child' => []
                     ],
                     [
-                        'name' => 'config.site.datecache',
+                        'name' => 'config.datecache',
                         'display_name' => '更新缓存',
-                        'route' => 'admin.site.datecache',
+                        'route' => 'admin.datecache',
                         'icon' => 'layui-icon-set-fill',
                         'child' => [
-                            ['name' => 'config.site.clearcache', 'display_name' => '更新缓存','route'=>'admin.site.clearcache'],
+                            ['name' => 'config.clearcache', 'display_name' => '更新缓存','route'=>'admin.clearcache'],
                         ]
                     ],
                 ]
@@ -216,21 +193,21 @@ class UsersTableSeeder extends Seeder
                     [
                         'name' => 'database.backup',
                         'display_name' => '数据备份',
-                        'route' => 'admin.databasebackup',
+                        'route' => 'admin.database.backup',
                         'icon' => 'layui-icon-set',
                         'child' => [
-                            ['name' => 'database.databasebackup.create', 'display_name' => '添加数据备份','route'=>'admin.databasebackup.create'],
+                            ['name' => 'database.backup.create', 'display_name' => '添加数据备份','route'=>'admin.database.backup.create'],
                         ]
                     ],
                     [
                         'name' => 'database.restore',
                         'display_name' => '数据恢复',
-                        'route' => 'admin.databaserestore',
+                        'route' => 'admin.database.restore',
                         'icon' => 'layui-icon-set',
                         'child' => [
-                            ['name' => 'database.databaserestore.restore', 'display_name' => '恢复数据','route'=>'admin.databaserestore.restore'],
-                            ['name' => 'database.databaserestore.download', 'display_name' => '下载数据','route'=>'admin.databaserestore.download'],
-                            ['name' => 'database.databaserestore.destroy', 'display_name' => '删除数据','route'=>'admin.databaserestore.destroy'],
+                            ['name' => 'database.restore.restore', 'display_name' => '恢复数据','route'=>'admin.database.restore.restore'],
+                            ['name' => 'database.restore.download', 'display_name' => '下载数据','route'=>'admin.database.restore.download'],
+                            ['name' => 'database.restore.destroy', 'display_name' => '删除数据','route'=>'admin.database.restore.destroy'],
                         ]
                     ],
                 ]
@@ -242,8 +219,8 @@ class UsersTableSeeder extends Seeder
             $p1 = \App\Models\Permission::create([
                 'name' => $pem1['name'],
                 'display_name' => $pem1['display_name'],
-                'route' => $pem1['route']??'',
-                'icon' => $pem1['icon']??'',
+                'route' => $pem1['route']?:'',
+                'icon' => $pem1['icon']?:'',
             ]);
             //为角色添加权限
             $role->givePermissionTo($p1);
@@ -256,8 +233,8 @@ class UsersTableSeeder extends Seeder
                         'name' => $pem2['name'],
                         'display_name' => $pem2['display_name'],
                         'parent_id' => $p1->id,
-                        'route' => $pem2['route']??'',
-                        'icon' => $pem2['icon']??'',
+                        'route' => $pem2['route']?:1,
+                        'icon' => $pem2['icon']?:'',
                     ]);
                     //为角色添加权限
                     $role->givePermissionTo($p2);
@@ -270,8 +247,8 @@ class UsersTableSeeder extends Seeder
                                 'name' => $pem3['name'],
                                 'display_name' => $pem3['display_name'],
                                 'parent_id' => $p2->id,
-                                'route' => $pem3['route']??'',
-                                'icon' => $pem3['icon']??'',
+                                'route' => $pem3['route']?:'',
+                                'icon' => isset($pem3['icon'])?$pem3['icon']:'',
                             ]);
                             //为角色添加权限
                             $role->givePermissionTo($p3);
@@ -296,7 +273,10 @@ class UsersTableSeeder extends Seeder
             \App\Models\Role::create($role);
         }
 
+        Artisan::call('cache:clear');
+
         echo '------------------------------'."\n";
+        echo "url: ".env('APP_URL','http://localhost')."/admin \n";
         echo 'username: '.$setdata['username']."\n";
         echo 'password: '.$setdata['password']."\n";
         echo '------------------------------'."\n";

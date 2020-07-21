@@ -23,7 +23,6 @@
                     </div>
                 </div>
 
-
                 <div class="layui-inline" style="margin-top: -4px;">
                     <button class="layui-btn" id="searchBtn" lay-submit="" lay-filter="searchBtn">
                         <i class="layui-icon layui-icon-search layuiadmin-button-btn"></i>
@@ -41,30 +40,22 @@
 @section('script')
     @can('logs.operation')
         <script>
-            layui.use(['opTable','form'],function () {
-                var opTable = layui.opTable,form = layui.form;
+            layui.use(['table','form'],function () {
+                var table = layui.table,form = layui.form;
 
-                var dataTable = opTable.render({
+                var dataTable = table.render({
                     elem: '#dataTable'
                     ,url: "{{ route('admin.operation.data') }}"
                     ,page: true
                     ,cols: [[
                         {field: 'username', title: '用户', templet: function (d) {
-                                return (d.user.name||'未知用户');
+                                return (d.user?d.user.name:'未知用户');
                             }}
                         ,{field: 'log_name', title: '位置'}
                         ,{field: 'description', title: '描述'}
                         ,{field: 'subject_type',title:'操作模型'}
                         ,{field: 'created_at', title: '创建时间'}
                     ]]
-                    , openCols: [{
-                        field: 'code', title: '数据', templet: function (it) {
-                            if (!it.code) {
-                                return "暂无示例代码"
-                            }
-                            return "<pre class='layui-code' >" + JSON.stringify(JSON.parse(it.code), null, 2) + "</pre>";
-                        }
-                    }]
                 });
 
                 //搜索

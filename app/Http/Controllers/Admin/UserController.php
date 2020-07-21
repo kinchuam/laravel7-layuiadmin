@@ -85,7 +85,7 @@ class UserController extends Controller
         $data['email'] = $data['email']??'';
         $data['phone'] = $data['phone']??'';
         if ($user->update($data)){
-            return response()->json(['status' => 'success', 'message' => '更新用户成功']);
+            return response()->json(['status' => 'success','noRefresh' => false, 'message' => '更新用户成功']);
         }
         return response()->json(['status' => 'fail', 'message' => '系统错误']);
     }
@@ -116,8 +116,8 @@ class UserController extends Controller
      */
     public function role(Request $request,$id)
     {
-        $user = User::findOrFail($id);
-        $roles = Role::get();
+        $user = User::query()->findOrFail($id);
+        $roles = Role::query()->get(['id','name','display_name']);
 //        $hasRoles = $user->roles();
         foreach ($roles as $role){
             $role->own = $user->hasRole($role) ? true : false;
@@ -130,7 +130,7 @@ class UserController extends Controller
      */
     public function assignRole(Request $request,$id)
     {
-        $user = User::findOrFail($id);
+        $user = User::query()->findOrFail($id);
         $roles = $request->get('roles',[]);
         if ($user->syncRoles($roles)){
             return response()->json([
@@ -147,8 +147,8 @@ class UserController extends Controller
      */
     public function permission(Request $request,$id)
     {
-        $user = User::findOrFail($id);
-        $permissions = $this->tree();
+        $user = User::query()->findOrFail($id);
+        $permissions = $this->tree(\App\Models\Permission::query()->get(['id','name','display_name','route','icon','parent_id','sort'])->toArray());
         foreach ($permissions as $key1 => $item1){
             $permissions[$key1]['own'] = $user->hasDirectPermission($item1['id']) ? 'checked' : false ;
             if (isset($item1['_child'])){
@@ -192,13 +192,13 @@ class UserController extends Controller
 
     public function LoginLog()
     {
-        $users = User::select()->get();
+        $users = User::query()->get(['id','name']);
         return view('admin.user.loginlog',compact('users'));
     }
 
     public function LoginLogDate(Request $request)
     {
-        $query = User\LoginLog::query();
+        $query = User\LoginLog::query()->select(['id','uuid','ip','agent','message','ipData','created_at']);
 
         if (!empty($request->get('ip',''))){
             $query = $query->where('ip','like',$request->get('ip').'%');
@@ -206,13 +206,15 @@ class UserController extends Controller
         if (!empty($request->get('uuid',''))){
             $query = $query->where('uuid', trim($request->get('uuid','')));
         }
-        $res = $query->with('user')->paginate($request->get('limit', 20))->toArray();
+        $res = $query->with('user')->orderBy('id','desc')->paginate($request->get('limit', 20))->toArray();
         $agent = new Agent();
         foreach ($res['data'] as &$row) {
             $agent->setUserAgent($row['agent']);
             $browser = $agent->browser();
             $system = $agent->platform();
             $row['system_browser'] = $system.' '.$agent->version($system).' | '.$browser.' '.$agent->version($browser);
+            $ipData = json_decode($row['ipData'],true);
+            $row['ip'] = ($ipData?$ipData['state_name'].$ipData['city']:'').' 【'.$row['ip'].'】';
         }
         unset($row);
         $data = [

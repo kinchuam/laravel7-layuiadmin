@@ -5,7 +5,7 @@
         <div class="layui-card-header">更新缓存</div>
 
         <div class="layui-card-body" pad15="">
-            <form class="layui-form" action="{{route('admin.site.clearcache')}}" method="post">
+            <form class="layui-form" action="{{route('admin.clearcache')}}" method="post">
                 {{csrf_field()}}
                 {{method_field('put')}}
 
@@ -17,12 +17,12 @@
                         <input type="checkbox" name="type[view]" checked title="视图缓存">
                     </div>
                 </div>
-                @can('config.site.clearcache')
-                <div class="layui-form-item">
-                    <div class="layui-input-block">
-                        <button type="submit" class="layui-btn" lay-submit="" lay-filter="formDemo">提 交</button>
+                @can('config.clearcache')
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button type="submit" class="layui-btn" lay-submit="" lay-filter="formDemo">提 交</button>
+                        </div>
                     </div>
-                </div>
                 @endcan
             </form>
         </div>

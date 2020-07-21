@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\AccessLog;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
 
@@ -21,22 +21,26 @@ class LogOperation
     public function handle($request, Closure $next)
     {
         if ($this->shouldLogOperation($request)){
+
+            $agent = new Agent();
+            $ip = $request->getClientIp();
+            $ipData = geoip($ip);
             $log = [
                 'path'    => substr($request->path(), 0, 255),
                 'method'  => $request->method(),
-                'ip'      => $request->getClientIp(),
+                'ip'      => $ip,
                 'input'   => json_encode($request->input()),
-                'agent'   => $_SERVER['HTTP_USER_AGENT'],
+                'agent'   => $agent->getUserAgent()??$_SERVER['HTTP_USER_AGENT'],
+                'platform' => $agent->platform()??'',
+                'browser' => $agent->browser()??'',
+                'ipData' => json_encode($ipData['attributes']),
             ];
-            $agent = new Agent();
-            $agent->setUserAgent($log['agent']);
-            $log['platform'] = $agent->platform()??'';
-            $log['browser'] = $agent->browser()??'';
 
             try {
-                AccessLog::create($log);
+                \App\Models\AccessLog::create($log);
             } catch (\Exception $exception) {
                 // pass
+                Log::channel('accessLog')->error($exception->getMessage());
             }
         }
 

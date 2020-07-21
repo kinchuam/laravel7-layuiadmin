@@ -6,7 +6,7 @@
             , uploadListIns = upload.render({
             elem: '#testList'
             , exts: '{{$exts}}'
-            , url: '{{ route("FileUpload") }}'
+            , url: '{{ route("admin.FileUpload") }}'
             , field:'iFile'
             , accept: 'file'
             , multiple: true
@@ -51,7 +51,7 @@
                 this.data = {'filetype':'image',"_token":"{{ csrf_token() }}"};
             }
             , done: function (res, index, upload) {
-                if (res.code == 0) { //上传成功
+                if (res.code === 0) { //上传成功
                     var tr = demoListView.find('tr#upload-' + index)
                         , tds = tr.children();
                     tds.eq(3).html('<span style="color: #5FB878;">上传成功</span>');

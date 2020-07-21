@@ -16,9 +16,7 @@ var FileLibrary = function(options){
 FileLibrary.prototype = {
     init: function () {
         var _this = this;
-        layui.use(['laytpl'],function () {
-            _this.laytpl = layui.laytpl;
-        });
+        _this.laytpl = _this.options.laytpl;
         // 打开文件库事件
         _this.triggerEvent();
     },
@@ -368,6 +366,7 @@ FileLibrary.prototype = {
         var _this = this;
         _this.$element.on('click', '.j-upload-network', function () {
             layer.prompt({title: '输入图片地址', formType: 2}, function(value, index, elem){
+                layer.load(2);
                 $.post(_this.options.FileUpload+'?upload_type=NetworkToLocal',{url:value,group_id:_this.getCurrentGroupId()},function (res) {
                     if (res.code > 0) {
                         layer.msg(res.msg);
@@ -383,6 +382,7 @@ FileLibrary.prototype = {
 
                     layer.msg(res.msg);
                     layer.close(index);
+                    layer.closeAll('loading');
                 });
             });
         });

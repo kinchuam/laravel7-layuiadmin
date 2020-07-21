@@ -20,7 +20,7 @@
     @can('database.backup')
         <script>
             layui.use(['layer','table','laydate','laytpl','element'],function () {
-                 var layer = layui.layer,table = layui.table,laytpl = layui.laytpl;
+                var layer = layui.layer,table = layui.table,laytpl = layui.laytpl;
                 laytpl.getfilesize = function (size=0) {
                     if (!size)
                         return "";
@@ -37,18 +37,19 @@
                 };
                 var dataTable = table.render({
                     elem: '#dataTable'
-                    ,url: "{{ route('admin.databasebackup.data') }}"
+                    ,url: "{{ route('admin.database.backup.data') }}"
                     ,toolbar: '#toolbar'
+                    ,defaultToolbar:[]
                     ,cols: [[
                         {checkbox: true,fixed: true}
                         ,{field: 'name', title: '数据库表'}
                         ,{field: 'rows', title: '记录条数',sort: true}
                         ,{field: 'data_length', title: '占用空间', templet: function (d) { return layui.laytpl.getfilesize(d.data_length); }}
-                         ,{field: 'engine', title: '类型'}
-                         ,{field: 'collation', title: '编码'}
-                         ,{field: 'create_time', title: '创建时间'}
-                         ,{field: 'comment', title: '说明'}
-                         ,{field: 'info', title: '备份状态' , align: 'center', templet: function (d) {
+                        ,{field: 'engine', title: '类型'}
+                        ,{field: 'collation', title: '编码'}
+                        ,{field: 'create_time', title: '创建时间'}
+                        ,{field: 'comment', title: '说明'}
+                        ,{field: 'info', title: '备份状态' , align: 'center', templet: function (d) {
                                 return '<div class="layui-progress layui-progress-big" lay-showPercent="yes" lay-filter="progress-'+ d.name +'"><div class="layui-progress-bar layui-bg-red" lay-percent="0%"></div></div><br>';
                             }}
                     ]]
@@ -76,7 +77,7 @@
                                 icon: 16
                                 ,shade: 0.01,
                             });
-                            $.post("{{ route('admin.databasebackup.store') }}", { tables: arr },
+                            $.post("{{ route('admin.database.backup.store') }}", { tables: arr },
                                 function(data) {
                                     if (data.status=='success') {
                                         tables = data.data.tables;
@@ -95,10 +96,10 @@
                             );
                             break;
                         case 'optimize':
-                            operation("{{ route('admin.databasebackup.optimize') }}",checkStatus.data);
+                            operation("{{ route('admin.database.backup.optimize') }}",checkStatus.data);
                             break;
                         case 'repair':
-                            operation("{{ route('admin.databasebackup.repair') }}",checkStatus.data);
+                            operation("{{ route('admin.database.backup.repair') }}",checkStatus.data);
                             break;
                     }
                 });
@@ -122,10 +123,10 @@
                 }
 
                 function backup($export, tab, code) {
-                    code && showmsg(tab.id, {rate:'0%'});
-                    $.get("{{ route('admin.databasebackup.store') }}", tab, function(data) {
+                    code && show_msg(tab.id, {rate:'0%'});
+                    $.get("{{ route('admin.database.backup.store') }}", tab, function(data) {
                         if (data.status=='success') {
-                            showmsg(tab.id, data);
+                            show_msg(tab.id, data);
                             var res = data.data?data.data.tab:'';
                             if (res == '') {
                                 $export.parent().children().removeClass("layui-btn-disabled");
@@ -143,7 +144,7 @@
                     });
                 }
 
-                function showmsg(id, data) {
+                function show_msg(id, data) {
                     layui.element.progress('progress-'+ $('.layui-table').find('tr:eq('+id+') td:eq(1)').find('div').text(), (data.rate||'0%'));
                 }
 

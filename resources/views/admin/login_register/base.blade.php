@@ -27,7 +27,7 @@
     </div>
 </div>
 
-<script src="{{ asset('js/jquery.min.js') }}"></script>
+<script src="//cdn.bootcdn.net/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
 <script src="{{ asset('static/common/layui/layui.js') }}"></script>
 <script>
 
@@ -51,10 +51,10 @@
         });
         //表单提示信息
         @if(count($errors)>0)
-            @foreach($errors->all() as $error)
-                layer.msg("{{$error}}",{icon:5});
-                @break
-            @endforeach
+        @foreach($errors->all() as $error)
+        layer.msg("{{$error}}",{icon:5});
+        @break
+        @endforeach
         @endif
 
         //正确提示

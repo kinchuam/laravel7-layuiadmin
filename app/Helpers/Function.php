@@ -10,9 +10,7 @@ if (!function_exists('strexists')) {
 if (!function_exists('price_format')) {
     function price_format($price)
     {
-        if (empty($price)){
-            return '';
-        }
+        if (empty($price)) { return ''; }
         $prices = explode('.', $price);
         if (intval($prices[1]) <= 0) {
             $price = $prices[0];
@@ -45,22 +43,22 @@ if (!function_exists('tpl_form_field_image')){
     }
 }
 
-if (!function_exists('tpl_form_field_multi_image')){
+if (!function_exists('tpl_form_field_multi_image')) {
     function tpl_form_field_multi_image($name, $value = [], $limit = 5)
     {
         $html = '<div class="layui-upload">
             <button type="button" class="layui-btn" data-name="'.$name.'" data-limit="'.$limit.'" data-default_pic="'.asset('static/admin/img/default-pic.jpg').'"  data-nopic="'.asset('static/admin/img/nopic.png').'" data-multiple="true" onclick="active.multi_image(this,\''.route("admin.files.getFiles").'\');">多图片上传</button>
             <blockquote class="input-group layui-elem-quote layui-quote-nm" style="margin-top: 10px;">
                 <ul class="layui-clear layui-upload-box">';
-                    if (!empty($value) && is_array($value)) {
-                        foreach ($value as $row) {
-                            $html .= '<li>
+        if (!empty($value) && is_array($value)) {
+            foreach ($value as $row) {
+                $html .= '<li>
                                 <img src="'.(!empty($row)?tomedia($row):asset('static/admin/img/default-pic.jpg')).'" onerror="this.src=\''.asset('static/admin/img/nopic.png').'\'"  alt="'.$row.'"/>
                                 <i class="layui-icon layui-icon-close-fill" data-default_pic="'.asset('static/admin/img/default-pic.jpg').'"  onclick="active.del_image(this)"></i>
                                 <input type="hidden" name="'.$name.'[]" value="'.$row.'">
                             </li>';
-                        }
-                    }
+            }
+        }
         $html .= '</ul>
             </blockquote>
         </div>';
@@ -84,9 +82,7 @@ if (!function_exists('is_array2')) {
 if (!function_exists('set_medias')) {
     function set_medias($list = [], $fields = null)
     {
-        if (empty($list)) {
-            return [];
-        }
+        if (empty($list)) { return []; }
         if (empty($fields)) {
             foreach ($list as &$row) {
                 $row = tomedia($row);
@@ -119,15 +115,13 @@ if (!function_exists('set_medias')) {
     }
 }
 
-if (!function_exists('tomedia')){
+if (!function_exists('tomedia')) {
     function tomedia($src , $local_path = false, $is_cahce = false)
     {
-        $config = (new App\Models\Site)->getPluginset('attachment.set');
+        $config = \App\Models\Site::getPluginset('attachment.set');
 
         $src = trim($src);
-        if (empty($src)) {
-            return '';
-        }
+        if (empty($src)) { return ''; }
         if (substr($src, 0, 2) == '//') {
             return 'http:' . $src;
         }
@@ -136,7 +130,7 @@ if (!function_exists('tomedia')){
         }
         $path = public_path('uploads/'.$src);
         if ($local_path || empty($config['storage']) || $config['storage']=='local' || file_exists($path)) {
-            $url = asset('/uploads/'. $src);
+            $url =  asset('/uploads/'. $src);
         } else {
             $url = attachment_set_attach_url($config) . (substr($src, 0, 1) == '/' ? $src : '/'.$src);
         }
@@ -155,8 +149,8 @@ if (!function_exists('tomedia')){
             } elseif ($config['storage'] == 'alioss') {
                 $attach_url = '';
             } elseif ($config['storage'] == 'qiniu') {
-                $https_url = config('filesystems.disks.qiniu.domains.https');
-                $attach_url = $https_url=='' ? 'http://'.config('filesystems.disks.qiniu.domains.default') :'https://'. $https_url;
+                $https_url = env('QINIU_DOMAIN_HTTPS', '');
+                $attach_url = $https_url=='' ? 'http://'. env('QINIU_DOMAIN_DEFAULT', '') :'https://'. $https_url;
             } elseif ($config['storage'] == 'cos') {
                 $attach_url = '';
             }
@@ -169,9 +163,7 @@ if (!function_exists('isMobile')) {
     function isMobile()
     {
         // 如果有HTTP_X_WAP_PROFILE则一定是移动设备
-        if (isset($_SERVER['HTTP_X_WAP_PROFILE'])) {
-            return true;
-        }
+        if (isset($_SERVER['HTTP_X_WAP_PROFILE'])) { return true; }
 
         // 如果via信息含有wap则一定是移动设备,部分服务商会屏蔽该信息
         if (isset($_SERVER['HTTP_VIA'])) {
@@ -201,7 +193,6 @@ if (!function_exists('isMobile')) {
                 return true;
             }
         }
-
         return false;
     }
 }

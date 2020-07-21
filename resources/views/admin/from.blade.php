@@ -10,14 +10,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <link rel="stylesheet" href="{{ asset('static/common/layui/css/layui.css') }}" media="all">
     <link rel="stylesheet" href="{{ asset('static/admin/css/style.css') }}" media="all">
-
 </head>
 <body>
 
 <div class="layui-fluid" style="margin-top: 15px;">
     @yield('content')
 </div>
-<script src="https://libs.baidu.com/jquery/1.11.1/jquery.min.js"></script>
+<script src="//cdn.bootcdn.net/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
 <script src="{{ asset('static/common/layui/layui.js') }}"></script>
 <script src="{{ asset('static/admin/js/admin.js') }}"></script>
 <script>
@@ -30,10 +29,11 @@
         ,tag: 'plugins/tag/tag'
         ,tinymce: 'plugins/tinymce/tinymce'
         ,inputTags: 'plugins/inputTags/inputTags'
+        ,xmSelect: 'plugins/xmSelect/xm-select'
     }).use(['form','layer'], function(){
         var form = layui.form,layer = layui.layer,ftype = false;
-        form.on('submit(formDemo)', function(data)
-        {
+
+        layui.onevent('groupData','submitData',function(data){
             var field = data.field,newarr = []; //获取提交的字段
             var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
 
@@ -50,32 +50,42 @@
                 }
             }
 
-            if(!ftype){
-                ftype = true;
-                //提交 Ajax 成功后，关闭当前弹层并重载表格
-                $.post($("form").attr('action'),field,function (result) {
-                    ftype = false;
-                    if (result.status === 'success') {
-                        if (typeof(result.noRefresh) !="undefined" && !result.noRefresh){
-                            if(result.fromdata){
-                                parent.layui.table.reload('dataTable',{
-                                    where:result.fromdata
+            //提交 Ajax 成功后，关闭当前弹层并重载表格
+            $.post($("form").attr('action'),field,function (result) {
+                ftype = false;
+                if (result.status === 'success') {
+                    if (typeof(result.noRefresh) !="undefined" && !result.noRefresh){
+                        if(result.fromdata){
+                            if(parent.layui.table) {
+                                parent.layui.table.reload('dataTable', {
+                                    where: result.fromdata
                                 });
-                            }else{
-                                parent.layui.table.reload('dataTable');
+                            }else if(parent.layui.treeTable) {
+                                parent.layui.treeTable.reload('dataTable',{
+                                    where: result.fromdata
+                                });
                             }
-                        }else if (result.refresh){
-                            parent.location.reload();
+                        }else{
+                            if(parent.layui.table) {
+                                parent.layui.table.reload('dataTable');
+                            }else if(parent.layui.treeTable) {
+                                parent.layui.treeTable.reload('dataTable');
+                            }
                         }
-                        parent.layer.close(index);
-                        parent.layer.msg(result.message, {time: 2000, icon: 6})
-                    } else {
-                        layer.msg(result.message, {time: 3000, icon: 5})
+                    }else if (result.refresh){
+                        parent.location.reload();
                     }
+                    parent.layer.close(index);
+                    parent.layer.msg(result.message, {time: 2000, icon: 6})
+                } else {
+                    layer.msg(result.message, {time: 3000, icon: 5})
+                }
 
-                });
-            }
+            });
+        });
 
+        form.on('submit(formDemo)', function(data) {
+            layui.event('groupData','submitData', data);
         });
 
         $.ajaxSetup({

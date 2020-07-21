@@ -63,10 +63,9 @@
                                 return '<span class="layui-btn layui-btn-xs" style="background-color: '+it.method_color+';">'+it.method+'</span>'
                             },width:90}
                         ,{field: 'path', title: '请求地址'}
-                        ,{field: 'platform', title: '系统'}
-                        ,{field: 'browser', title: '浏览器'}
+                        ,{field: 'system_browser', title: '信息',}
                         ,{field: 'created_at', title: '创建时间'}
-                        ,{fixed: 'right', width: 180, align:'center', toolbar: '#options'}
+                        ,{fixed: 'right', width: 120, align:'center', toolbar: '#options'}
                     ]]
                     , openCols: [{
                         field: 'code', title: '数据', templet: function (it) {

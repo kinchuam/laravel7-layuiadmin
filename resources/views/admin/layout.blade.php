@@ -2,35 +2,16 @@
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <title>{{ isset($website['title'])?$website['title']:'LaravelAdmin' }} - 主页</title>
-    <meta name="keywords" content="{{ isset($website['keywords'])?$website['keywords']:'LaravelAdmin' }} - 主页">
-    <meta name="description" content="{{ isset($website['description'])?$website['description']:'LaravelAdmin' }} - 主页">
+    <title>LaravelAdmin - 主页</title>
+    <meta name="keywords" content="LaravelAdmin - 主页">
+    <meta name="description" content="LaravelAdmin - 主页">
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <link rel="shortcut icon" type="image/x-icon" href="{{ isset($website['icon'])?$website['icon']: asset('favicon.ico') }}">
     <link rel="stylesheet" href="{{ asset('static/common/layui/css/layui.css') }}" media="all">
     <link rel="stylesheet" href="{{ asset('static/common/style/admin.css') }}" media="all">
-    <style>
-        body .layui-layout-admin .footer-demo{margin-top:90px;height: 40px; line-height: 40px; padding: 5px 0;}
-        .footer{padding: 30px 0; line-height: 30px; text-align: center; color: #666; font-weight: 300;}
-        .footer a{padding: 0 5px;}
-        .site-union{color: #999;}
-        .site-union>*{display: inline-block; vertical-align: middle;}
-        .site-union a[sponsor] img{width: 80px;}
-        .site-union span{position: relative; top: 5px;}
-        .site-union span a{padding: 0; display: inline; color: #999;}
-        .site-union span a:hover{text-decoration: underline;}
-        .site-union .site-union-desc{display: block; margin-bottom: 10px;}
-
-        .footer-demo p,
-        .footer-demo .site-union,
-        .footer-demo .site-union p{display: inline-block; vertical-align: middle; padding-right: 10px;}
-        .footer-demo .site-union{position: relative; top: -5px;}
-        .footer-demo .site-union .site-union-desc{margin-bottom: 0; padding-right: 0;}
-        .footer-demo .site-union a[sponsor] img{position: relative; top: 3px;}
-
-    </style>
+    <link rel="stylesheet" href="{{ asset('static/admin/css/style.css') }}" media="all">
 </head>
 <body class="layui-layout-body">
 
@@ -45,7 +26,7 @@
                     </a>
                 </li>
                 <li class="layui-nav-item layui-hide-xs" lay-unselect>
-                    <a href="{{route('home')}}" target="_blank" title="前台">
+                    <a href="{{route('home.index')}}" target="_blank" title="前台">
                         <i class="layui-icon layui-icon-website"></i>
                     </a>
                 </li>
@@ -61,8 +42,13 @@
             <ul class="layui-nav layui-layout-right" lay-filter="layadmin-layout-right">
 
                 <li class="layui-nav-item layui-hide-xs" lay-unselect>
-                    <a href="javascript:;" layadmin-event="theme">
-                        <i class="layui-icon layui-icon-theme"></i>
+                    <a href="javascript:;" lay-href="{{ route('admin.datecache') }}" layadmin-event="cache"  lay-text="清除缓存">
+                        <i class="layui-icon layui-icon-delete"></i>
+                    </a>
+                </li>
+                <li class="layui-nav-item layui-hide-xs" lay-unselect="" style="">
+                    <a href="javascript:;" layadmin-event="note">
+                        <i class="layui-icon layui-icon-note"></i>
                     </a>
                 </li>
                 <li class="layui-nav-item layui-hide-xs" lay-unselect>
@@ -83,7 +69,7 @@
                 </li>
 
                 <li class="layui-nav-item layui-hide-xs" lay-unselect>
-                    <a href="javascript:;" ><i class="layui-icon layui-icon-more-vertical"></i></a>
+                    <a href="javascript:;" layadmin-event="theme"><i class="layui-icon layui-icon-more-vertical"></i></a>
                 </li>
                 <li class="layui-nav-item layui-show-xs-inline-block layui-hide-sm" lay-unselect>
                     <a href="javascript:;" layadmin-event="more"><i class="layui-icon layui-icon-more-vertical"></i></a>
@@ -112,23 +98,23 @@
                     </li>
                     @foreach($menus as $menu)
                         @can($menu->name)
-                        <li data-name="{{$menu->name}}" class="layui-nav-item">
-                            <a href="javascript:;" lay-tips="{{$menu->display_name}}" lay-direction="2">
-                                <i class="layui-icon {{$menu->icon?:''}}"></i>
-                                <cite>{{$menu->display_name}}</cite>
-                            </a>
-                            @if($menu->childs->isNotEmpty())
-                            <dl class="layui-nav-child">
-                                @foreach($menu->childs as $subMenu)
-                                    @can($subMenu->name)
-                                    <dd data-name="{{$subMenu->name}}" >
-                                        <a lay-href="{{ route($subMenu->route) }}">{{$subMenu->display_name}}</a>
-                                    </dd>
-                                    @endcan
-                                @endforeach
-                            </dl>
-                            @endif
-                        </li>
+                            <li data-name="{{$menu->name}}" class="layui-nav-item">
+                                <a href="javascript:;" lay-tips="{{$menu->display_name}}" lay-direction="2">
+                                    <i class="layui-icon {{$menu->icon?:''}}"></i>
+                                    <cite>{{$menu->display_name}}</cite>
+                                </a>
+                                @if($menu->childs->isNotEmpty())
+                                    <dl class="layui-nav-child">
+                                        @foreach($menu->childs as $subMenu)
+                                            @can($subMenu->name)
+                                                <dd data-name="{{$subMenu->name}}" >
+                                                    <a lay-href="{{ route($subMenu->route) }}">{{$subMenu->display_name}}</a>
+                                                </dd>
+                                            @endcan
+                                        @endforeach
+                                    </dl>
+                                @endif
+                            </li>
                         @endcan
                     @endforeach
                 </ul>
@@ -166,18 +152,18 @@
         </div>
         @if(isset($website['copyright']))
 
-        <div class="layui-footer footer footer-demo">
-            <div class="layui-main">
-                {!! $website['copyright'] !!}
+            <div class="layui-footer footer footer-demo">
+                <div class="layui-main">
+                    {!! $website['copyright'] !!}
+                </div>
             </div>
-        </div>
-        <style> .layui-layout-admin .layui-body{bottom: 50px;} </style>
-        @endif
-        <!-- 辅助元素，一般用于移动设备下遮罩 -->
+            <style> .layui-layout-admin .layui-body{bottom: 50px;} </style>
+    @endif
+    <!-- 辅助元素，一般用于移动设备下遮罩 -->
         <div class="layadmin-body-shade" layadmin-event="shade"></div>
     </div>
 </div>
-<script src="https://libs.baidu.com/jquery/1.11.1/jquery.min.js"></script>
+<script src="//cdn.bootcdn.net/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
 <script src="{{ asset('static/common/layui/layui.js') }}"></script>
 
 <script>
@@ -186,9 +172,6 @@
     }).extend({
         index: 'lib/index' //主入口模块
     }).use('index');
-
 </script>
 </body>
 </html>
-
-

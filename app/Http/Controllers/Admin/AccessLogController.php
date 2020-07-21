@@ -28,7 +28,7 @@ class AccessLogController extends Controller
      */
     public function data(Request $request)
     {
-        $model = AccessLog::query();
+        $model = AccessLog::query()->select(['id','path', 'method','input' ,'ip','agent','ipdata','created_at']);;
         if (!empty($request->get('method'))){
             $model = $model->where('method',$request->get('method'));
         }
@@ -44,13 +44,14 @@ class AccessLogController extends Controller
         $agent = new Agent();
         foreach ($res['data'] as &$row)
         {
-            $agent->setUserAgent($row['agent']);
             $row['code'] = "{$row['input']}";
+            $row['method_color'] = $methodColors[$row['method']]?:'red';
+            $agent->setUserAgent($row['agent']);
             $browser = $agent->browser();
             $system = $agent->platform();
-            $row['platform'] = $system.' '.$agent->version($system);
-            $row['browser'] = $browser.' '.$agent->version($browser);
-            $row['method_color'] = $methodColors[$row['method']]??'red';
+            $row['system_browser'] = ($system?$system.' '.$agent->version($system).' | ':'').$browser.' '.$agent->version($browser);
+            $ipData = json_decode($row['ipdata'],true);
+            $row['ip'] = ($ipData?$ipData['state_name'].$ipData['city']:'').' 【'.$row['ip'].'】';
         }
         unset($row);
         $data = [
@@ -93,9 +94,7 @@ class AccessLogController extends Controller
             $ipdata['address'] = '内网';
             $ipdata['lon_lat'] = '未知';
             $ipdata['isp'] = '内网';
-        }
-        else
-            {
+        } else {
             $ipdata = [];
             if (empty($item['ipdata'])){
                 $record = $this->get_ip_localhost($item['ip']);
@@ -105,15 +104,15 @@ class AccessLogController extends Controller
             }else if ($item['ipdata']) {
                 $record = json_decode($item['ipdata'],true);
             }
-
-            $ipdata['address'] = ($record['country']??'') . " " . ($record['regionName']??'') . " " . ($record['city']??'');
+            $address = ($record['country']??'') . " " . ($record['state_name']??($record['regionName']??'')) . " " . ($record['city']??'');
+            $isp = $record['isp']??($record['continent']??'');
+            $ipdata['address'] = $address;
             $ipdata['lon_lat'] = ($record['lat']??'') . ' , ' . ($record['lon']??'');
-            $ipdata['isp'] = ($record['isp']??'');
+            $ipdata['isp'] = $isp;
         }
 
         $arr = [];
-        if (!empty($item['agent']))
-        {
+        if (!empty($item['agent'])) {
             $agent = new Agent();
             $agent->setUserAgent($item['agent']);
 
@@ -141,10 +140,10 @@ class AccessLogController extends Controller
     public function destroy(Request $request)
     {
         $ids = $request->get('ids');
-        if (empty($ids)){
+        if (empty($ids)) {
             return response()->json(['code'=>1,'msg'=>'请选择删除项']);
         }
-        if (AccessLog::destroy($ids)){
+        if (AccessLog::destroy($ids)) {
             return response()->json(['code'=>0,'msg'=>'删除成功']);
         }
         return response()->json(['code'=>1,'msg'=>'删除失败']);

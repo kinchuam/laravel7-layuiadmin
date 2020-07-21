@@ -8,13 +8,13 @@
             <table id="dataTable" lay-filter="dataTable"></table>
             <script type="text/html" id="options">
                 <div class="layui-btn-group">
-                    @can('database.databaserestore.restore')
+                    @can('database.restore.restore')
                         <a class="layui-btn layui-btn-sm layui-btn-normal" lay-event="restore">恢复</a>
                     @endcan
-                    @can('database.databaserestore.download')
+                    @can('database.restore.download')
                         <a class="layui-btn layui-btn-sm" lay-event="down">下载</a>
                     @endcan
-                    @can('database.databaserestore.destroy')
+                    @can('database.restore.destroy')
                         <a class="layui-btn layui-btn-danger layui-btn-sm " lay-event="del">删除</a>
                     @endcan
                 </div>
@@ -28,7 +28,7 @@
     @can('database.restore')
         <script>
             layui.use(['layer','table','laydate','laytpl'],function () {
-                 var layer = layui.layer,table = layui.table,laytpl = layui.laytpl;
+                var layer = layui.layer,table = layui.table,laytpl = layui.laytpl;
                 laytpl.getfilesize = function (size=0) {
                     if (!size)
                         return "";
@@ -43,17 +43,17 @@
                         return (size / Math.pow(num, 3)).toFixed(2) + "G"; //G
                     return (size / Math.pow(num, 4)).toFixed(2) + "T"; //T
                 };
-                 table.render({
+                table.render({
                     elem: '#dataTable'
-                    ,url: "{{ route('admin.databaserestore.data') }}"
+                    ,url: "{{ route('admin.database.restore.data') }}"
                     ,cols: [[
                         {field: 'title', title: '备份名称'}
                         ,{field: 'date', title: '备份时间'}
                         ,{field: 'size', title: '备份大小', templet: function (d) { return layui.laytpl.getfilesize(d.size);}}
-                         ,{field: 'part', title: '卷数'}
-                         ,{field: 'compress', title: '压缩'}
-                         ,{field: '', title: '状态', templet: '<div>-</div>'}
-                         ,{fixed: 'right', width: 180, align:'center', toolbar: '#options'}
+                        ,{field: 'part', title: '卷数'}
+                        ,{field: 'compress', title: '压缩'}
+                        ,{field: '', title: '状态', templet: '<div>-</div>'}
+                        ,{fixed: 'right', width: 180, align:'center', toolbar: '#options'}
                     ]]
                 });
 
@@ -63,7 +63,7 @@
                     if (obj.event === 'del') {
                         layer.confirm('确定删除这条数据？', { icon: 3, title: '提示' }, function(index) {
                             layer.close(index);
-                            $.post('{{ route('admin.databaserestore.destroy') }}', { _method:'delete', 'time': data.time }, function(result) {
+                            $.post('{{ route('admin.database.restore.destroy') }}', { _method:'delete', 'time': data.time }, function(result) {
                                 if (result.code==0){
                                     obj.del();
                                 }
@@ -72,10 +72,10 @@
                             });
                         })
                     } else if (obj.event === 'down') {
-                        window.open('{{ route('admin.databaserestore.download') }}' + "?time=" + data.time, '_self')
+                        window.open('{{ route('admin.database.restore.download') }}' + "?time=" + data.time, '_self')
                     } else if (obj.event === 'restore') {
                         var self = this,
-                            url = '{{ route('admin.databaserestore.restore') }}' + '?time=' + data.time;
+                            url = '{{ route('admin.database.restore.restore') }}' + '?time=' + data.time;
                         layer.confirm('确定恢复此条数据库吗？', { icon: 3, title: '提示' }, function(index) {
                             layer.close(index);
                             $.get(url, success, "json");

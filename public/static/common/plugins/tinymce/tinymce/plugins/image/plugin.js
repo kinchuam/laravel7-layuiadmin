@@ -4,7 +4,7 @@
  * For LGPL see License.txt in the project root for license information.
  * For commercial licenses see https://www.tiny.cloud/
  *
- * Version: 5.0.16 (2019-09-24)
+ * Version: 5.2.0 (2020-02-13)
  */
 (function (domGlobals) {
     'use strict';
@@ -161,6 +161,7 @@
     var isArray = isType('array');
     var isBoolean = isType('boolean');
     var isFunction = isType('function');
+    var isNumber = isType('number');
 
     var nativeSlice = Array.prototype.slice;
     var nativePush = Array.prototype.push;
@@ -185,6 +186,15 @@
     };
     var from$1 = isFunction(Array.from) ? Array.from : function (x) {
       return nativeSlice.call(x);
+    };
+    var findMap = function (arr, f) {
+      for (var i = 0; i < arr.length; i++) {
+        var r = f(arr[i], i);
+        if (r.isSome()) {
+          return r;
+        }
+      }
+      return Option.none();
     };
 
     var __assign = function () {
@@ -1017,9 +1027,6 @@
     };
 
     var hasOwnProperty = Object.prototype.hasOwnProperty;
-    var shallow = function (old, nu) {
-      return nu;
-    };
     var deep = function (old, nu) {
       var bothObjects = isObject(old) && isObject(nu);
       return bothObjects ? deepMerge(old, nu) : nu;
@@ -1046,80 +1053,70 @@
       };
     };
     var deepMerge = baseMerge(deep);
-    var merge = baseMerge(shallow);
 
-    var makeItems = function (info) {
-      var imageUrl = {
-        name: 'src',
-        type: 'urlinput',
-        filetype: 'image',
-        label: 'Source'
-      };
-      var imageList = info.imageList.map(function (items) {
-        return {
-          name: 'images',
-          type: 'selectbox',
-          label: 'Image list',
-          items: items
-        };
-      });
-      var imageDescription = {
-        name: 'alt',
-        type: 'input',
-        label: 'Image description'
-      };
-      var imageTitle = {
-        name: 'title',
-        type: 'input',
-        label: 'Image title'
-      };
-      var imageDimensions = {
-        name: 'dimensions',
-        type: 'sizeinput'
-      };
-      var classList = info.classList.map(function (items) {
-        return {
-          name: 'classes',
-          type: 'selectbox',
-          label: 'Class',
-          items: items
-        };
-      });
-      var caption = {
-        type: 'label',
-        label: 'Caption',
-        items: [{
-            type: 'checkbox',
-            name: 'caption',
-            label: 'Show caption'
-          }]
-      };
-      return flatten([
-        [imageUrl],
-        imageList.toArray(),
-        info.hasDescription ? [imageDescription] : [],
-        info.hasImageTitle ? [imageTitle] : [],
-        info.hasDimensions ? [imageDimensions] : [],
-        [{
-            type: 'grid',
-            columns: 2,
-            items: flatten([
-              classList.toArray(),
-              info.hasImageCaption ? [caption] : []
-            ])
-          }]
-      ]);
+    var ATTRIBUTE = domGlobals.Node.ATTRIBUTE_NODE;
+    var CDATA_SECTION = domGlobals.Node.CDATA_SECTION_NODE;
+    var COMMENT = domGlobals.Node.COMMENT_NODE;
+    var DOCUMENT = domGlobals.Node.DOCUMENT_NODE;
+    var DOCUMENT_TYPE = domGlobals.Node.DOCUMENT_TYPE_NODE;
+    var DOCUMENT_FRAGMENT = domGlobals.Node.DOCUMENT_FRAGMENT_NODE;
+    var ELEMENT = domGlobals.Node.ELEMENT_NODE;
+    var TEXT = domGlobals.Node.TEXT_NODE;
+    var PROCESSING_INSTRUCTION = domGlobals.Node.PROCESSING_INSTRUCTION_NODE;
+    var ENTITY_REFERENCE = domGlobals.Node.ENTITY_REFERENCE_NODE;
+    var ENTITY = domGlobals.Node.ENTITY_NODE;
+    var NOTATION = domGlobals.Node.NOTATION_NODE;
+
+    var Global = typeof domGlobals.window !== 'undefined' ? domGlobals.window : Function('return this;')();
+
+    var rawSet = function (dom, key, value) {
+      if (isString(value) || isBoolean(value) || isNumber(value)) {
+        dom.setAttribute(key, value + '');
+      } else {
+        domGlobals.console.error('Invalid call to Attr.set. Key ', key, ':: Value ', value, ':: Element ', dom);
+        throw new Error('Attribute value was not simple');
+      }
     };
-    var makeTab = function (info) {
-      return {
-        title: 'General',
-        name: 'general',
-        items: makeItems(info)
-      };
+    var set = function (element, key, value) {
+      rawSet(element.dom(), key, value);
     };
-    var MainTab = {
-      makeTab: makeTab,
-      makeItems: makeItems
+
+    var fromHtml = function (html, scope) {
+      var doc = scope || domGlobals.document;
+      var div = doc.createElement('div');
+      div.innerHTML = html;
+      if (!div.hasChildNodes() || div.childNodes.length > 1) {
+        domGlobals.console.error('HTML does not have a single root node', html);
+        throw new Error('HTML must have a single root node');
+      }
+      return fromDom(div.childNodes[0]);
+    };
+    var fromTag = function (tag, scope) {
+      var doc = scope || domGlobals.document;
+      var node = doc.createElement(tag);
+      return fromDom(node);
+    };
+    var fromText = function (text, scope) {
+      var doc = scope || domGlobals.document;
+      var node = doc.createTextNode(text);
+      return fromDom(node);
+    };
+    var fromDom = function (node) {
+      if (node === null || node === undefined) {
+        throw new Error('Node cannot be null or undefined');
+      }
+      return { dom: constant(node) };
+    };
+    var fromPoint = function (docElm, x, y) {
+      var doc = docElm.dom();
+      return Option.from(doc.elementFromPoint(x, y)).map(fromDom);
+    };
+    var Element = {
+      fromHtml: fromHtml,
+      fromTag: fromTag,
+      fromText: fromText,
+      fromDom: fromDom,
+      fromPoint: fromPoint
     };
 
     var global$2 = tinymce.util.Tools.resolve('tinymce.dom.DOMUtils');
@@ -1173,6 +1170,12 @@
     var getUploadCredentials = function (editor) {
       return editor.getParam('images_upload_credentials', false, 'boolean');
     };
+    var showAccessibilityOptions = function (editor) {
+      return editor.getParam('a11y_advanced_options', false, 'boolean');
+    };
+    var isAutomaticUploadsEnabled = function (editor) {
+      return editor.getParam('automatic_uploads', true, 'boolean');
+    };
     var Settings = {
       hasDimensions: hasDimensions,
       hasUploadTab: hasUploadTab,
@@ -1188,7 +1191,9 @@
       getUploadUrl: getUploadUrl,
       getUploadHandler: getUploadHandler,
       getUploadBasePath: getUploadBasePath,
-      getUploadCredentials: getUploadCredentials
+      getUploadCredentials: getUploadCredentials,
+      showAccessibilityOptions: showAccessibilityOptions,
+      isAutomaticUploadsEnabled: isAutomaticUploadsEnabled
     };
 
     var parseIntAndGetMax = function (val1, val2) {
@@ -1436,6 +1441,16 @@
     var isImage = function (elm) {
       return elm.nodeName === 'IMG';
     };
+    var getIsDecorative = function (image) {
+      return DOM.getAttrib(image, 'alt').length === 0 && DOM.getAttrib(image, 'role') === 'presentation';
+    };
+    var getAlt = function (image) {
+      if (getIsDecorative(image)) {
+        return '';
+      } else {
+        return getAttrib(image, 'alt');
+      }
+    };
     var defaultData = function () {
       return {
         src: '',
@@ -1449,7 +1464,8 @@
         hspace: '',
         vspace: '',
         border: '',
-        borderStyle: ''
+        borderStyle: '',
+        isDecorative: false
       };
     };
     var getStyleValue = function (normalizeCss, data) {
@@ -1469,10 +1485,10 @@
       }
       return normalizeCss(image.getAttribute('style'));
     };
-    var create = function (normalizeCss, data) {
+    var create = function (normalizeCss, data, info) {
       var image = domGlobals.document.createElement('img');
-      write(normalizeCss, merge(data, { caption: false }), image);
-      setAttrib(image, 'alt', data.alt);
+      write(normalizeCss, __assign(__assign({}, data), { caption: false }), image, info);
+      setAlt(image, data.alt, data.isDecorative, info);
       if (data.caption) {
         var figure = DOM.create('figure', { class: 'image' });
         figure.appendChild(image);
@@ -1486,7 +1502,7 @@
     var read = function (normalizeCss, image) {
       return {
         src: getAttrib(image, 'src'),
-        alt: getAttrib(image, 'alt'),
+        alt: getAlt(image),
         title: getAttrib(image, 'title'),
         width: getSize(image, 'width'),
         height: getSize(image, 'height'),
@@ -1496,12 +1512,35 @@
         hspace: getHspace(image),
         vspace: getVspace(image),
         border: getBorder(image),
-        borderStyle: getStyle(image, 'borderStyle')
+        borderStyle: getStyle(image, 'borderStyle'),
+        isDecorative: getIsDecorative(image)
       };
     };
     var updateProp = function (image, oldData, newData, name, set) {
       if (newData[name] !== oldData[name]) {
         set(image, name, newData[name]);
+      }
+    };
+    var setAlt = function (image, alt, isDecorative, info) {
+      if (isDecorative) {
+        DOM.setAttrib(image, 'role', 'presentation');
+        var sugarImage = Element.fromDom(image);
+        set(sugarImage, 'alt', '');
+      } else {
+        if (info.hasAccessibilityOptions) {
+          DOM.setAttrib(image, 'alt', alt);
+        } else {
+          var sugarImage = Element.fromDom(image);
+          set(sugarImage, 'alt', alt);
+        }
+        if (DOM.getAttrib(image, 'role') === 'presentation') {
+          DOM.setAttrib(image, 'role', '');
+        }
+      }
+    };
+    var updateAlt = function (image, oldData, newData, info) {
+      if (newData.alt !== oldData.alt || newData.isDecorative !== oldData.isDecorative) {
+        setAlt(image, newData.alt, newData.isDecorative, info);
       }
     };
     var normalized = function (set, normalizeCss) {
@@ -1510,13 +1549,12 @@
         normalizeStyle(image, normalizeCss);
       };
     };
-    var write = function (normalizeCss, newData, image) {
+    var write = function (normalizeCss, newData, image, info) {
       var oldData = read(normalizeCss, image);
       updateProp(image, oldData, newData, 'caption', function (image, _name, _value) {
         return toggleCaption(image);
       });
       updateProp(image, oldData, newData, 'src', setAttrib);
-      updateProp(image, oldData, newData, 'alt', setAttrib);
       updateProp(image, oldData, newData, 'title', setAttrib);
       updateProp(image, oldData, newData, 'width', setSize('width', normalizeCss));
       updateProp(image, oldData, newData, 'height', setSize('height', normalizeCss));
@@ -1528,6 +1566,7 @@
       updateProp(image, oldData, newData, 'vspace', normalized(setVspace, normalizeCss));
       updateProp(image, oldData, newData, 'border', normalized(setBorder, normalizeCss));
       updateProp(image, oldData, newData, 'borderStyle', normalized(setBorderStyle, normalizeCss));
+      updateAlt(image, oldData, newData, info);
     };
 
     var normalizeCss = function (editor, cssText) {
@@ -1550,7 +1589,7 @@
     var splitTextBlock = function (editor, figure) {
       var dom = editor.dom;
       var textBlock = dom.getParent(figure.parentNode, function (node) {
-        return editor.schema.getTextBlockElements()[node.nodeName];
+        return !!editor.schema.getTextBlockElements()[node.nodeName];
       }, editor.getBody());
       if (textBlock) {
         return dom.split(textBlock, figure);
@@ -1564,10 +1603,10 @@
         return normalizeCss(editor, css);
       }, image) : defaultData();
     };
-    var insertImageAtCaret = function (editor, data) {
+    var insertImageAtCaret = function (editor, data, info) {
       var elm = create(function (css) {
         return normalizeCss(editor, css);
-      }, data);
+      }, data, info);
       editor.dom.setAttrib(elm, 'data-mce-id', '__mcenew');
       editor.focus();
       editor.selection.setContent(elm.outerHTML);
@@ -1595,11 +1634,11 @@
         }
       }
     };
-    var writeImageDataToSelection = function (editor, data) {
+    var writeImageDataToSelection = function (editor, data, info) {
       var image = getSelectedImage(editor);
       write(function (css) {
         return normalizeCss(editor, css);
-      }, data, image);
+      }, data, image, info);
       syncSrcAttr(editor, image);
       if (isFigure(image.parentNode)) {
         var figure = image.parentNode;
@@ -1610,27 +1649,17 @@
         Utils.waitLoadImage(editor, data, image);
       }
     };
-    var insertOrUpdateImage = function (editor, data) {
+    var insertOrUpdateImage = function (editor, data, info) {
       var image = getSelectedImage(editor);
       if (image) {
         if (data.src) {
-          writeImageDataToSelection(editor, data);
+          writeImageDataToSelection(editor, data, info);
         } else {
           deleteImage(editor, image);
         }
       } else if (data.src) {
-        insertImageAtCaret(editor, data);
+        insertImageAtCaret(editor, data, info);
       }
-    };
-
-    var findMap = function (arr, f) {
-      for (var i = 0; i < arr.length; i++) {
-        var r = f(arr[i], i);
-        if (r.isSome()) {
-          return r;
-        }
-      }
-      return Option.none();
     };
 
     var global$5 = tinymce.util.Tools.resolve('tinymce.util.Tools');
@@ -1757,7 +1786,7 @@
       return { upload: upload };
     }
 
-    var makeTab$1 = function (info) {
+    var makeTab = function (info) {
       return {
         title: 'Advanced',
         name: 'advanced',
@@ -1774,17 +1803,20 @@
               {
                 type: 'input',
                 label: 'Vertical space',
-                name: 'vspace'
+                name: 'vspace',
+                inputMode: 'numeric'
               },
               {
                 type: 'input',
                 label: 'Horizontal space',
-                name: 'hspace'
+                name: 'hspace',
+                inputMode: 'numeric'
               },
               {
                 type: 'input',
                 label: 'Border width',
-                name: 'border'
+                name: 'border',
+                inputMode: 'numeric'
               },
               {
                 type: 'selectbox',
@@ -1842,7 +1874,7 @@
         ]
       };
     };
-    var AdvTab = { makeTab: makeTab$1 };
+    var AdvTab = { makeTab: makeTab };
 
     var collect = function (editor) {
       var urlListSanitizer = ListUtils.sanitizer(function (item) {
@@ -1871,10 +1903,12 @@
       var hasImageTitle = Settings.hasImageTitle(editor);
       var hasDimensions = Settings.hasDimensions(editor);
       var hasImageCaption = Settings.hasImageCaption(editor);
+      var hasAccessibilityOptions = Settings.showAccessibilityOptions(editor);
       var url = Settings.getUploadUrl(editor);
       var basePath = Settings.getUploadBasePath(editor);
       var credentials = Settings.getUploadCredentials(editor);
       var handler = Settings.getUploadHandler(editor);
+      var automaticUploads = Settings.isAutomaticUploadsEnabled(editor);
       var prependURL = Option.some(Settings.getPrependUrl(editor)).filter(function (preUrl) {
         return isString(preUrl) && preUrl.length > 0;
       });
@@ -1895,9 +1929,96 @@
           basePath: basePath,
           credentials: credentials,
           handler: handler,
-          prependURL: prependURL
+          prependURL: prependURL,
+          hasAccessibilityOptions: hasAccessibilityOptions,
+          automaticUploads: automaticUploads
         };
       });
+    };
+
+    var makeItems = function (info) {
+      var imageUrl = {
+        name: 'src',
+        type: 'urlinput',
+        filetype: 'image',
+        label: 'Source'
+      };
+      var imageList = info.imageList.map(function (items) {
+        return {
+          name: 'images',
+          type: 'selectbox',
+          label: 'Image list',
+          items: items
+        };
+      });
+      var imageDescription = {
+        name: 'alt',
+        type: 'input',
+        label: 'Alternative description',
+        disabled: info.hasAccessibilityOptions && info.image.isDecorative
+      };
+      var imageTitle = {
+        name: 'title',
+        type: 'input',
+        label: 'Image title'
+      };
+      var imageDimensions = {
+        name: 'dimensions',
+        type: 'sizeinput'
+      };
+      var isDecorative = {
+        type: 'label',
+        label: 'Accessibility',
+        items: [{
+            name: 'isDecorative',
+            type: 'checkbox',
+            label: 'Image is decorative'
+          }]
+      };
+      var classList = info.classList.map(function (items) {
+        return {
+          name: 'classes',
+          type: 'selectbox',
+          label: 'Class',
+          items: items
+        };
+      });
+      var caption = {
+        type: 'label',
+        label: 'Caption',
+        items: [{
+            type: 'checkbox',
+            name: 'caption',
+            label: 'Show caption'
+          }]
+      };
+      return flatten([
+        [imageUrl],
+        imageList.toArray(),
+        info.hasAccessibilityOptions && info.hasDescription ? [isDecorative] : [],
+        info.hasDescription ? [imageDescription] : [],
+        info.hasImageTitle ? [imageTitle] : [],
+        info.hasDimensions ? [imageDimensions] : [],
+        [{
+            type: 'grid',
+            columns: 2,
+            items: flatten([
+              classList.toArray(),
+              info.hasImageCaption ? [caption] : []
+            ])
+          }]
+      ]);
+    };
+    var makeTab$1 = function (info) {
+      return {
+        title: 'General',
+        name: 'general',
+        items: makeItems(info)
+      };
+    };
+    var MainTab = {
+      makeTab: makeTab$1,
+      makeItems: makeItems
     };
 
     var makeTab$2 = function (info) {
@@ -1940,7 +2061,8 @@
         border: image.border,
         hspace: image.hspace,
         borderstyle: image.borderStyle,
-        fileinput: []
+        fileinput: [],
+        isDecorative: image.isDecorative
       };
     };
     var toImageData = function (data) {
@@ -1956,7 +2078,8 @@
         hspace: data.hspace,
         vspace: data.vspace,
         border: data.border,
-        borderStyle: data.borderstyle
+        borderStyle: data.borderstyle,
+        isDecorative: data.isDecorative
       };
     };
     var addPrependUrl2 = function (info, srcURL) {
@@ -1985,6 +2108,9 @@
       if (info.hasDescription && isString(meta.alt)) {
         data.alt = meta.alt;
       }
+      if (info.hasAccessibilityOptions) {
+        data.isDecorative = meta.isDecorative || false;
+      }
       if (info.hasImageTitle && isString(meta.title)) {
         data.title = meta.title;
       }
@@ -2007,6 +2133,9 @@
         }
       }
       if (info.hasAdvTab) {
+        if (isString(meta.style)) {
+          data.style = meta.style;
+        }
         if (isString(meta.vspace)) {
           data.vspace = meta.vspace;
         }
@@ -2140,22 +2269,31 @@
           api.unblock();
           domGlobals.URL.revokeObjectURL(blobUri);
         };
+        var updateSrcAndSwitchTab = function (url) {
+          api.setData({
+            src: {
+              value: url,
+              meta: {}
+            }
+          });
+          api.showTab('general');
+          changeSrc(helpers, info, state, api);
+        };
         Utils.blobToDataUri(file).then(function (dataUrl) {
           var blobInfo = helpers.createBlobCache(file, blobUri, dataUrl);
-          uploader.upload(blobInfo).then(function (url) {
-            api.setData({
-              src: {
-                value: url,
-                meta: {}
-              }
+          if (info.automaticUploads) {
+            uploader.upload(blobInfo).then(function (url) {
+              updateSrcAndSwitchTab(url);
+              finalize();
+            }).catch(function (err) {
+              finalize();
+              helpers.alertErr(api, err);
             });
-            api.showTab('general');
-            changeSrc(helpers, info, state, api);
-            finalize();
-          }).catch(function (err) {
-            finalize();
-            helpers.alertErr(api, err);
-          });
+          } else {
+            helpers.addToBlobCache(blobInfo);
+            updateSrcAndSwitchTab(blobInfo.blobUri());
+            api.unblock();
+          }
         });
       });
     };
@@ -2173,6 +2311,12 @@
           changeAStyle(helpers, info, api);
         } else if (evt.name === 'fileinput') {
           changeFileInput(helpers, info, state, api);
+        } else if (evt.name === 'isDecorative') {
+          if (api.getData().isDecorative) {
+            api.disable('alt');
+          } else {
+            api.enable('alt');
+          }
         }
       };
     };
@@ -2232,7 +2376,7 @@
         return function (api) {
           var data = deepMerge(fromImageData(info.image), api.getData());
           editor.undoManager.transact(function () {
-            insertOrUpdateImage(editor, toImageData(data));
+            insertOrUpdateImage(editor, toImageData(data), info);
           });
           editor.editorUpload.uploadImagesAuto();
           api.close();
@@ -2264,6 +2408,11 @@
         });
       };
     };
+    var addToBlobCache = function (editor) {
+      return function (blobInfo) {
+        editor.editorUpload.blobCache.add(blobInfo);
+      };
+    };
     var alertErr = function (editor) {
       return function (api, message) {
         editor.windowManager.alert(message, api.close);
@@ -2288,6 +2437,7 @@
       var helpers = {
         onSubmit: submitHandler(editor),
         imageSize: imageSize(editor),
+        addToBlobCache: addToBlobCache(editor),
         createBlobCache: createBlobCache(editor),
         alertErr: alertErr(editor),
         normalizeCss: normalizeCss$1(editor),

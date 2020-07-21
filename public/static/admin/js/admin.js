@@ -28,7 +28,7 @@
 
     active.prototype.multi_image = function (that,url)
     {
-        layer.open({
+        parent.layer.open({
             type: 2
             , title: '图片库'
             , area:  ['850px','585px']
@@ -62,11 +62,11 @@
                 }
                 $html = $(html);
                 if (limit > 0 && $imagesList.find('li').length + list.length > limit) {
-                    layer.msg('图片数量不能大于' + limit + '张', {anim: 6});
+                    parent.layer.msg('图片数量不能大于' + limit + '张', {anim: 6});
                     return false;
                 }
                 $html.find('img').click(function(){
-                    layer.open({
+                    parent.layer.open({
                         type: 2,
                         title: false,
                         area: ['50%', '50%'],
@@ -78,7 +78,7 @@
                 });
                 // 渲染html
                 multiple ? $imagesList.append($html) : ($imagesList.html($html),$(that).prev().val(data[0].file_path));
-                layer.close(index);
+                parent.layer.close(index);
             }
         });
     };
@@ -149,5 +149,19 @@ function saveAs(blob, filename) {
 function download(url, filename) {
     getBlob(url).then(blob => {
         saveAs(blob, filename);
+    });
+}
+
+function preview(url){
+    layer.photos({
+        photos: {
+            title: "查看",
+            data: [{
+                src:  url
+            }]
+        },
+        shade: .01,
+        closeBtn: 1,
+        anim: 5
     });
 }

@@ -2,24 +2,8 @@
 
 <div class="layui-form-item">
     <label for="" class="layui-form-label">父级</label>
-    <div class="layui-input-block" style="width: 55%;">
-        <select name="parent_id" lay-search="">
-            <option value="0">顶级权限</option>
-            @forelse($permissions as $perm)
-                <option value="{{$perm['id']}}" {{ isset($permission->id) && $perm['id'] == $permission->parent_id ? 'selected' : '' }} >{{$perm['display_name']}}</option>
-                @if(isset($perm['_child']))
-                    @foreach($perm['_child'] as $childs)
-                        <option value="{{$childs['id']}}" {{ isset($permission->id) && $childs['id'] == $permission->parent_id ? 'selected' : '' }} >　┗━━ {{$childs['display_name']}}</option>
-                        @if(isset($childs['_child']))
-                            @foreach($childs['_child'] as $lastChilds)
-                                <option value="{{$lastChilds['id']}}" {{ isset($permission->id) && $lastChilds['id'] == $permission->parent_id ? 'selected' : '' }} >　　┗━━ {{$lastChilds['display_name']}}</option>
-                            @endforeach
-                        @endif
-                    @endforeach
-                @endif
-            @empty
-            @endforelse
-        </select>
+    <div class="layui-input-inline" style="width:65%;">
+        <div id="category" data-parent_id="{{isset($permission->parent_id)?$permission->parent_id:request()->get("parentid",0)}}"></div>
     </div>
 </div>
 

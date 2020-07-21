@@ -2,82 +2,47 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
-use Venturecraft\Revisionable\RevisionableTrait;
 
 class Site extends Model
 {
-    use RevisionableTrait;
     protected $table = 'sites';
     protected $fillable = ['key', 'value'];
-    //获取
-    public function getPluginset($key = null)
+    public $desc = '配置表';
+    //获取设置
+    public static function getPluginset($key = '')
     {
-        if (empty($key)){
-            return false;
-        }
-        $set = $this->getSetData($key);
-        $allset = [];
-
-        if (!empty($set['value'])){
-            $allset = json_decode($set['value'],true);
-        }
-
-        return $allset;
+        if (empty($key)){ return false; }
+        $set = Cache::remember($key, Carbon::now()->addMinutes(env('APP_CONFIG_CACHE',120)), function () use($key) {
+            return Site::select('key', 'value')->where('key', $key)->first(['key','value']);
+        });
+        if (!empty($set['value'])){ return json_decode($set['value'],true); }
+        return [];
     }
-    //更新
-    public function updatePluginset($key = null , $values)
+
+    //更新设置
+    public static function updatePluginset($key = '', $values = [])
     {
-        if (empty($key)){
-            return false;
-        }
-        $setdata = Site::where('key',$key)->first();
+        if (empty($key)){ return false; }
+        $setdata = Site::where('key', $key)->first(['key','value']);
         if (empty($setdata)) {
-            $res = Site::create(['key' => $key, 'value' => json_encode($values)]);
-            $setdata = array('value' => $values);
+            $a = ['key' => $key, 'value' => json_encode($values)];
+            Site::create($a);
         } else {
             $plugins = json_decode($setdata['value'],true);
-            if(!is_array($plugins)){
-                $plugins = array();
-            }
+            if(!is_array($plugins)){ $plugins = []; }
             foreach ($values as $ke => $va) {
                 if(!isset($plugins[$ke]) || !is_array($plugins[$ke])){
-                    $plugins[$ke] = array();
+                    $plugins[$ke] = [];
                 }
                 $plugins[$ke] = $va;
             }
-
-            $res = $setdata->update(['value' => json_encode($plugins)]);
-            if ($res) {
-                $setdata['value'] = $plugins;
-            }
+            $setdata->update(['value' => json_encode($plugins)]);
         }
-        if (empty($res)) {
-            $setdata = Site::where('key',$key)->first();
-        }
-        Cache::put($key, json_encode($setdata['value']), now()->addMinutes(120));
+        Cache::forget($key);
         return true;
     }
 
-    public function getSetData($key = null)
-    {
-        if (empty($key)){
-            return false;
-        }
-        $data = [];
-        $set =  Cache::get($key);
-        if (empty($set)) {
-            $set = Site::select('key','value')->where('key',$key)->first();
-            $set = empty($set)?[]:$set->toArray();
-            if (!empty($set['value'])){
-                Cache::put($key, $set['value'], now()->addMinutes(120));
-            }
-            $data = $set;
-        } else if (!empty($set)){
-            $data['key'] = $key;
-            $data['value'] = $set;
-        }
-        return $data;
-    }
 }

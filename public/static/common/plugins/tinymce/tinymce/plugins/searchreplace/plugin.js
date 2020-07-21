@@ -4,7 +4,7 @@
  * For LGPL see License.txt in the project root for license information.
  * For commercial licenses see https://www.tiny.cloud/
  *
- * Version: 5.0.16 (2019-09-24)
+ * Version: 5.2.0 (2020-02-13)
  */
 (function () {
     'use strict';
@@ -309,11 +309,13 @@
         dom.remove(parent);
       }
     };
+    var escapeSearchText = function (text, wholeWord) {
+      var escapedText = text.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&').replace(/\s/g, '[^\\S\\r\\n]');
+      return wholeWord ? '\\b' + escapedText + '\\b' : escapedText;
+    };
     var find = function (editor, currentSearchState, text, matchCase, wholeWord) {
-      text = text.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
-      text = text.replace(/\s/g, '[^\\S\\r\\n]');
-      text = wholeWord ? '\\b' + text + '\\b' : text;
-      var count = markAllMatches(editor, currentSearchState, new RegExp(text, matchCase ? 'g' : 'gi'));
+      var escapedText = escapeSearchText(text, wholeWord);
+      var count = markAllMatches(editor, currentSearchState, new RegExp(escapedText, matchCase ? 'g' : 'gi'));
       if (count) {
         var newIndex = moveSelection(editor, currentSearchState, true);
         currentSearchState.set({
@@ -618,6 +620,8 @@
       };
     };
 
+    var global$2 = tinymce.util.Tools.resolve('tinymce.Env');
+
     var open = function (editor, currentSearchState) {
       var dialogApi = value();
       editor.undoManager.add();
@@ -628,6 +632,14 @@
         var updatePrev = hasPrev(editor, currentSearchState) ? api.enable : api.disable;
         updatePrev('prev');
       }
+      var updateSearchState = function (api) {
+        var data = api.getData();
+        var current = currentSearchState.get();
+        currentSearchState.set(__assign(__assign({}, current), {
+          matchCase: data.matchcase,
+          wholeWord: data.wholewords
+        }));
+      };
       var disableAll = function (api, disable) {
         var buttons = [
           'replace',
@@ -643,6 +655,11 @@
           api.focus('findtext');
         });
       }
+      var focusButtonIfRequired = function (api, name) {
+        if (global$2.browser.isSafari() && global$2.deviceType.isTouch() && (name === 'find' || name === 'replace' || name === 'replaceall')) {
+          api.focus(name);
+        }
+      };
       var reset = function (api) {
         done(editor, currentSearchState, false);
         disableAll(api, true);
@@ -686,7 +703,8 @@
                   type: 'input',
                   name: 'findtext',
                   placeholder: 'Find',
-                  maximized: true
+                  maximized: true,
+                  inputMode: 'search'
                 },
                 {
                   type: 'button',
@@ -709,7 +727,8 @@
             {
               type: 'input',
               name: 'replacetext',
-              placeholder: 'Replace with'
+              placeholder: 'Replace with',
+              inputMode: 'search'
             }
           ]
         },
@@ -783,11 +802,18 @@
             next(editor, currentSearchState);
             updateButtonStates(api);
             break;
-          default:
+          case 'matchcase':
+          case 'wholewords':
+            updateSearchState(api);
+            reset(api);
             break;
           }
+          focusButtonIfRequired(api, details.name);
         },
-        onSubmit: doFind,
+        onSubmit: function (api) {
+          doFind(api);
+          focusButtonIfRequired(api, 'find');
+        },
         onClose: function () {
           editor.focus();
           done(editor, currentSearchState);

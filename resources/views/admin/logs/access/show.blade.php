@@ -9,9 +9,14 @@
 
             <tr>
                 <td class="set">路由</td>
-                <td>{{isset($item['path'])?$item['path']:''}}</td>
+                <td colspan="3">{{isset($item['path'])?$item['path']:''}}</td>
+            </tr>
+
+            <tr>
                 <td class="set">IP地址</td>
                 <td>{{isset($item['ip'])?$item['ip']:''}}</td>
+                <td class="set"> 请求时间</td>
+                <td> {{isset($item['created_at'])?$item['created_at']:''}} </td>
             </tr>
 
             <tr>
@@ -26,12 +31,6 @@
                 <td>{{(isset($ipdata['address'])?$ipdata['address']:'')}}</td>
                 <td class="set">运营商</td>
                 <td> {{isset($ipdata['isp'])?$ipdata['isp']:''}}</td>
-            </tr>
-
-
-            <tr>
-                <td class="set"> 请求时间</td>
-                <td> {{isset($item['created_at'])?$item['created_at']:''}} </td>
             </tr>
 
             <tr>
@@ -84,24 +83,28 @@
         }
     </style>
     <script>
-        layui.use(['jquery','layer'],function () {
-            var $ = layui.$,layer = layui.layer;
+        layui.use(['layer'],function () {
+            var layer = layui.layer;
+
             $("#showview").on('click',function () {
                 var text = $(this).text();
-
-                var html = '<pre class="layui-code"><code>' + '\n'
+                var html = '<pre class="layui-code">'
+                    + '<code>' + '\n'
                     + JSON.stringify(JSON.parse(text),null,2) + '\n'
-                    + '</pre></code>';
+                    + '</code>' + '\n'
+                    + '</pre>';
 
-                layer.open({
+                parent.layer.open({
                     title:'code'
                     ,type: 1
                     ,anim: 2
                     ,shadeClose: true
                     ,skin: 'layui-layer-rim', //加上边框
-                    area: ['70%', '70%'], //宽高
-                    content: html
+                    area: ['50%', '50%'], //宽高
+                    content: html,
                 });
+
+
             });
         });
 

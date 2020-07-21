@@ -12,20 +12,6 @@
                 <label class="layadmin-user-login-icon layui-icon layui-icon-password" for="LAY-user-login-password"></label>
                 <input type="password" name="password"  lay-verify="required" lay-vertype="tips" placeholder="密码" class="layui-input">
             </div>
-{{--            <div class="layui-form-item">--}}
-{{--                <div class="layui-row">--}}
-{{--                    <div class="layui-col-xs7">--}}
-{{--                        <label class="layadmin-user-login-icon layui-icon layui-icon-vercode" for="LAY-user-login-vercode"></label>--}}
-{{--                        <input type="text" name="vercode" id="LAY-user-login-vercode" lay-verify="required" placeholder="图形验证码" class="layui-input">--}}
-{{--                    </div>--}}
-{{--                    <div class="layui-col-xs5">--}}
-{{--                        <div style="margin-left: 10px;">--}}
-{{--                            <img src="https://www.oschina.net/action/user/captcha" class="layadmin-user-login-codeimg" id="LAY-user-get-vercode">--}}
-{{--                        </div>--}}
-{{--                    </div>--}}
-{{--                </div>--}}
-{{--            </div>--}}
-
             <div class="layui-form-item">
                 <div id="slider"></div>
             </div>

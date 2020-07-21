@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\Decomposer;
 use App\Models\Site;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Redis;
 
@@ -19,14 +19,14 @@ class SiteController extends Controller
     public function index()
     {
         $sitekey = 'website';
-        $config = (new Site)->getPluginset($sitekey);
+        $config = Site::getPluginset($sitekey);
         return view('admin.site.index',compact('config','sitekey'));
     }
 
     public function attachment()
     {
         $sitekey = 'attachment.set';
-        $config = (new Site)->getPluginset($sitekey);
+        $config = Site::getPluginset($sitekey);
 
         $config['file_type'] = !empty($config['file_type'])?explode('|',$config['file_type']):["mp3","txt"];
         $config['image_type'] = !empty($config['image_type'])?explode('|',$config['image_type']):["png", "jpg", "gif","jpeg","bmp"];
@@ -36,58 +36,17 @@ class SiteController extends Controller
         return view('admin.site.attachment',compact('sitekey','config'));
     }
 
-    public function attachmentupdate(Request $request)
-    {
-        $data = $request->except(['_token','_method']);
-        if (empty($data)){
-            return response()->json(['status' => 'fail', 'message' => '无数据更新']);
-        }
-
-        $key = $data['sitekey'];
-        unset($data['sitekey']);
-        $rels = (new Site)->updatePluginset($key,$data);
-        if ($rels){
-            return response()->json(['status' => 'success', 'message' => '更新成功']);
-        }
-        return response()->json(['status' => 'fail', 'message' => '系统错误']);
-    }
-
     public function optimize()
     {
-        $json = file_get_contents(base_path('composer.json'));
-        $res = json_decode($json, true);
-        $dependencies = $res['require'];
-        $dependencie_desvs = $res['require-dev'];
+        $composerArray = Decomposer::getComposerArray();
+        $packages = Decomposer::getPackagesAndDependencies($composerArray['require']);
+        $laravelEnv = Decomposer::getLaravelEnv();
+        $serverEnv = Decomposer::getServerEnv();
+        $serverExtras = Decomposer::getServerExtras();
+        $laravelExtras = Decomposer::getLaravelExtras();
+        $extraStats = Decomposer::getExtraStats();
 
-        $envs = [
-            ['name' => 'PHP version', 'type'=>'php',  'value' => 'PHP/'.PHP_VERSION],
-            ['name' => 'Laravel version',   'value' => app()->version()],
-            ['name' => 'CGI',               'value' => php_sapi_name()],
-            ['name' => 'Uname',             'value' => php_uname()],
-            ['name' => 'Server',            'value' => $_SERVER['SERVER_SOFTWARE']],
-
-            ['name' => 'Cache driver',      'value' => config('cache.default')],
-            ['name' => 'Session driver',    'value' => config('session.driver')],
-            ['name' => 'Queue driver',      'value' => config('queue.default')],
-
-            ['name' => 'Timezone',          'value' => config('app.timezone')],
-            ['name' => 'Locale',            'value' => config('app.locale')],
-            ['name' => 'Env',               'value' => config('app.env')],
-            ['name' => 'URL',               'value' => config('app.url')],
-        ];
-        $extras = [];
-        if (config('cache.default')=='redis'){
-            $status = Redis::info();
-            if (!empty($status)) {
-                $Memory = $status;
-                $extras['redis']['extra'] = '消耗峰值：' . round($Memory['used_memory_peak'] / 1048576, 2) . ' M/ 内存总量：' . round($Memory['used_memory'] / 1048576, 2) . ' M';
-            }
-        }
-        if (function_exists('memory_get_usage')){
-            $extras['php']['extra'] = '内存量：' . round(memory_get_usage()/1024/1024, 2).' M';
-        }
-
-        return view('admin.site.optimize',compact('dependencies','envs','extras','dependencie_desvs'));
+        return view('admin.site.optimize', compact('packages', 'laravelEnv', 'serverEnv', 'extraStats', 'serverExtras', 'laravelExtras'));
     }
 
     public function datecache()
@@ -109,6 +68,9 @@ class SiteController extends Controller
             if (isset($type['config'])){
                 Artisan::call('config:clear');
             }
+            if (extension_loaded('Zend OPcache')) {
+                opcache_reset();
+            }
             return back()->with(['status'=>'更新缓存成功']);
         }
         return back()->with(['status'=>'请选择需要清除选项']);
@@ -119,20 +81,29 @@ class SiteController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function update(Request $request)
     {
         $data = $request->except(['_token','_method']);
-        if (empty($data)){
+        if (empty($data)) {
+            if ($request->ajax()) {
+                return response()->json(['status' => 'fail', 'message' => '无数据更新']);
+            }
             return back()->withErrors(['status'=>'无数据更新']);
         }
 
         $key = $data['sitekey'];
         unset($data['sitekey']);
-        $rels = (new Site)->updatePluginset($key,$data);
-        if ($rels){
+        $rels = Site::updatePluginset($key,$data);
+        if ($rels) {
+            if ($request->ajax()) {
+                return response()->json(['status' => 'success', 'message' => '更新成功']);
+            }
             return back()->with(['status'=>'更新成功']);
+        }
+        if ($request->ajax()) {
+            return response()->json(['status' => 'fail', 'message' => '系统错误']);
         }
         return back()->withErrors('系统错误');
 

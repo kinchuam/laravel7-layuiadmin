@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Database;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -37,8 +38,7 @@ class DatabaseController extends Controller
         $id = isset($PD['id'])?$PD['id']:null;
         //起始行数
         $start = isset($PD['start'])?$PD['start']:null;
-        if ( !empty($tables) && is_array($tables) )
-        {
+        if ( !empty($tables) && is_array($tables) ) {
             //读取备份配置
             $config = config('custom.DatabaseBackup');
             if (!is_dir($config['path'])) {
@@ -50,21 +50,21 @@ class DatabaseController extends Controller
                 return response()->json(['status' => 'fail', 'message' => '检测到有一个备份任务正在执行，请稍后再试！']);
             } else {
                 //创建锁文件
-                Cache::put($lock, time(),120);
+                Cache::put($lock, time(), Carbon::now()->addMinutes(2));
             }
             //检查备份目录是否可写
             if (!is_writeable($config['path'])) {
                 return response()->json(['status' => 'fail', 'message' => '备份目录不存在或不可写，请检查后重试！']);
             }
-            Cache::put('backup_config', $config, 120);
+            Cache::put('backup_config', $config, Carbon::now()->addMinutes(2));
             //生成备份文件信息
-            $file = array(
+            $file = [
                 'name' => date('Ymd-His', time()),
                 'part' => 1,
-            );
-            Cache::put('backup_file', $file, 120);
+            ];
+            Cache::put('backup_file', $file, Carbon::now()->addMinutes(2));
             //缓存要备份的表
-            Cache::put('backup_tables', $tables, 120);
+            Cache::put('backup_tables', $tables, Carbon::now()->addMinutes(2));
             //创建备份文件
             $Database = new Database($file, $config);
             if (false !== $Database->create()) {
@@ -73,29 +73,21 @@ class DatabaseController extends Controller
             } else {
                 return response()->json(['status' => 'fail', 'message' => '初始化失败，备份文件创建失败！']);
             }
-        }
-        elseif ( is_numeric($id) && is_numeric($start))
-        {
+        } elseif ( is_numeric($id) && is_numeric($start)) {
             //备份数据
             $tables = Cache::get('backup_tables');
             //备份指定表
             $Database = new Database(Cache::get('backup_file'), Cache::get('backup_config') );
             $start = $Database->backup($tables[$id], $start);
-            if (false === $start)
-            {
+            if (false === $start) {
                 //出错
                 return response()->json(['status' => 'fail', 'message' => '备份出错！']);
-            }
-            elseif (0 === $start)
-            {
+            } elseif (0 === $start) {
                 //下一表
-                if (isset($tables[++$id]))
-                {
+                if (isset($tables[++$id])) {
                     $tab = ['id' => $id, 'start' => 0];
                     return response()->json(['status' => 'success', 'message' => "备份完成！", 'rate' => '100%', 'data' => ['tab' => $tab]]);
-                }
-                else
-                    {
+                } else {
                     //备份完成，清空缓存
                     Cache::forget(Cache::get('backup_config')['path'] . 'backup.lock');
                     Cache::forget('backup_tables');
@@ -103,14 +95,11 @@ class DatabaseController extends Controller
                     Cache::forget('backup_config');
                     return response()->json(['status' => 'success', 'message' => "备份完成！", 'rate' => '100%']);
                 }
-            }
-            else
-                {
+            } else {
                 $tab = ['id' => $id, 'start' => $start[0]];
                 $rate = floor(100 * ($start[0] / $start[1]));
                 return response()->json(['status' => 'success', 'message' => "正在备份...({$rate}%)", 'rate' => $rate.'%', 'data' => ['tab' => $tab]]);
             }
-
         } else {
             return response()->json(['status' => 'fail', 'message' => '备份失败']);
         }
@@ -205,7 +194,6 @@ class DatabaseController extends Controller
         //表名
         $tables = $request->get('tables');
         if (is_array($tables)) {
-
             $tables = implode('`,`', $tables);
             $list = DB::statement("REPAIR TABLE `{$tables}`");
             if ($list) {
@@ -213,7 +201,6 @@ class DatabaseController extends Controller
             } else {
                 return response()->json(['code'=>1,'msg'=>'修复出错请重试']);
             }
-
         } else {
             return response()->json(['code'=>1,'msg'=>'请指定要修复的表']);
         }
@@ -243,9 +230,10 @@ class DatabaseController extends Controller
             //检测文件正确性
             $last = end($list);
             if (count($list) === $last[0]) {
-                Cache::put('backup_list', $list);
+                Cache::put('backup_list', $list, Carbon::now()->addMinutes(120));
                 return response()->json(['code'=>1,'msg'=>'初始化完成', 'data'=>['part' => 1, 'start' => 0]]);
             } else {
+                Cache::forget('backup_list');
                 return response()->json(['code'=>-1, 'msg'=>'备份文件可能已经损坏，请检查']);
             }
         } elseif (is_numeric($part) && is_numeric($start)) {

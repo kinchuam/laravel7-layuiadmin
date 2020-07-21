@@ -2,14 +2,14 @@
  @ Name：layui 表格冗余列可展开显示
  @ Author：hbm
  @ License：MIT
- @ version 1.2
+ @ version 1.3
  */
 
 layui.define(['form', 'table'], function (exports) {
   var $ = layui.$
       , table = layui.table
       , form = layui.form
-      , VERSION = 1.2, MOD_NAME = 'opTable'
+      , VERSION = 1.3, MOD_NAME = 'opTable'
       // 展开 , 关闭
       , ON = 'on', OFF = 'off', KEY_STATUS = "status"
       // openType 0、默认效果同时只展开一项  1、点击展开多项 2、 展开全部  3、关闭全部
@@ -50,15 +50,18 @@ layui.define(['form', 'table'], function (exports) {
             , id = options.id || options.index;
         return {
           /**
-           * 重新加载 哦penTable
+           * 重载  penTable
            * @param options layui table 参数 和opTable参数
            * @returns {thisIns}
            */
           reload: function (options) {
-            var defIsAloneColumn = that.config.isAloneColumn
+            var defIsAloneColumn = that.config.isAloneColumn && that.config.openVisible
                 , defOpenColumnIndex = that.config.openColumnIndex
                 , colArr = that.config.cols[0];
-            that.config = $.extend(that.config, options);
+
+            options = $.extend(that.config, options);
+            that.config = options;
+
             // 下标越界问题
             options.openColumnIndex = options.openColumnIndex > colArr.length ? colArr.length : options.openColumnIndex;
             // 单独显示列 移除第一次创建的列
@@ -70,6 +73,10 @@ layui.define(['form', 'table'], function (exports) {
               openColumn.title = openColumn.opDefTitle;
               openColumn.templet = openColumn.opDefTem;
             }
+
+            // 记录页码
+            that.config.page.limit = that.config.table.config.page.limit;
+            that.config.page.curr = that.config.table.config.page.curr;
             that.render();
             return this;
           }
@@ -175,7 +182,9 @@ layui.define(['form', 'table'], function (exports) {
 
   //默认配置
   Class.prototype.config = {
-    openType: OPEN_DEF
+    // 是否显示展开 默认显示
+    openVisible: true
+    , openType: OPEN_DEF
     // 展开的item (垂直v|水平h) 排序
     , opOrientation: 'v'
     // 在那一列显示展开操作 v1.2
@@ -201,11 +210,13 @@ layui.define(['form', 'table'], function (exports) {
         , colArr = options.cols[0]
         , openCols = options.openCols || []
         , openNetwork = options.openNetwork || null
-        , openTable = options.openTable || null
-        , done = options.done;
+        , openTable = options.openTable || null;
+
 
     // 展开显示表格 同时只支持展开一个
     options.openType = openTable ? OPEN_DEF : options.openType;
+    options.layuiDone = options.done || options.layuiDone;
+
     // 下标越界问题
     options.openColumnIndex = options.openColumnIndex > colArr.length ? colArr.length : options.openColumnIndex;
     delete options["done"];
@@ -235,69 +246,76 @@ layui.define(['form', 'table'], function (exports) {
     };
 
 
-    //1、 单独占一列
-    if (options.isAloneColumn) {
-      //  1、在指定列 插入可展开操作
-      colArr.splice(options.openColumnIndex, 0, {
-        align: 'left',
-        width: 50,
-        title: getOpenAllIcon(openTable, options.elem, allIcon()),
-        templet: function (item) {
+    if (options.openVisible) {
+      //1、 单独占一列
+      if (options.isAloneColumn) {
+        //  1、在指定列 插入可展开操作
+        colArr.splice(options.openColumnIndex, 0, {
+          align: 'left',
+          width: 50,
+          title: getOpenAllIcon(openTable, options.elem, allIcon()),
+          templet: function (item) {
+            // 解决页面多个表格问题
+            var cla = getOpenClickClass(options.elem, false);
+            openItemData[cla] = openItemData[cla] || {};
+            openItemData[cla][item.LAY_INDEX] = item;
+            return "<i class='opTable-i-table-open " + cla + "opTable-i-table-open' " + KEY_STATUS + "='off'  data='"
+                //  把当前列的数据绑定到控件
+                + item.LAY_INDEX
+                + " ' elem='"
+                + cla
+                + "' title='展开' " + indexByIcon(item.LAY_INDEX) + "></i>";
+          }
+        });
+      } else {
+        //2、与数据占一列
+        var openColumn = colArr[options.openColumnIndex];
+        delete openColumn["edit"];
+        openColumn.opDefTitle = openColumn.title;
+        // 展开显示表格||存在排序 都不支持展开全部
+        openColumn.title = getOpenAllIcon(openTable || openColumn["sort"], options.elem, allIcon()) + ("<span class='opTable-span-seize'></span>") + openColumn.title;
+        openColumn.opDefTem = openColumn.templet;
+        openColumn.templet = function (item) {
           // 解决页面多个表格问题
           var cla = getOpenClickClass(options.elem, false);
           openItemData[cla] = openItemData[cla] || {};
           openItemData[cla][item.LAY_INDEX] = item;
-          return "<i class='opTable-i-table-open " + cla + "opTable-i-table-open' " + KEY_STATUS + "='off'  data='"
+          return ("<i class='opTable-i-table-open " + cla + "opTable-i-table-open' " + KEY_STATUS + "='off'  data='"
               //  把当前列的数据绑定到控件
               + item.LAY_INDEX
               + " ' elem='"
               + cla
-              + "' title='展开' " + indexByIcon(item.LAY_INDEX) + "></i>";
-        }
-      });
-    } else {
-      //2、与数据占一列
-      var openColumn = colArr[options.openColumnIndex];
-      delete openColumn["edit"];
-      openColumn.opDefTitle = openColumn.title;
-      // 展开显示表格||存在排序 都不支持展开全部
-      openColumn.title = getOpenAllIcon(openTable || openColumn["sort"], options.elem, allIcon()) + ("<span class='opTable-span-seize'></span>") + openColumn.title;
-      openColumn.opDefTem = openColumn.templet;
-      openColumn.templet = function (item) {
-        // 解决页面多个表格问题
-        var cla = getOpenClickClass(options.elem, false);
-        openItemData[cla] = openItemData[cla] || {};
-        openItemData[cla][item.LAY_INDEX] = item;
-        return ("<i class='opTable-i-table-open " + cla + "opTable-i-table-open' " + KEY_STATUS + "='off'  data='"
-            //  把当前列的数据绑定到控件
-            + item.LAY_INDEX
-            + " ' elem='"
-            + cla
-            + "' title='展开' "
-            + indexByIcon(item.LAY_INDEX) + "></i>")
-            + ("<span class='opTable-span-seize'></span>")
-            + (openColumn.opDefTem ? openColumn.opDefTem(item) : item[openColumn.field]);
-      };
+              + "' title='展开' "
+              + indexByIcon(item.LAY_INDEX) + "></i>")
+              + ("<span class='opTable-span-seize'></span>")
+              + (openColumn.opDefTem ? openColumn.opDefTem(item) : item[openColumn.field]);
+        };
+      }
     }
+
 
     //  2、表格Render
     options.table = table.render(
         $.extend({
           done: function (res, curr, count) {
             initExpandedListener();
-            if (done) {
-              done(res, curr, count)
-            }
+            options.layuiDone && options.layuiDone(res, curr, count)
           }
         }, options));
 
 
     // 3、展开事件
     function initExpandedListener() {
+      if (!options.openVisible) {
+        return;
+      }
+
       $("." + getOpenClickClass(options.elem, true))
           .parent()
           .unbind("click")
-          .click(function () {
+          .click(function (e) {
+            layui.stope(e);
+
             var that = $(this).children()
                 , _this = this
                 , itemIndex = parseInt(that.attr("data"))
@@ -374,9 +392,9 @@ layui.define(['form', 'table'], function (exports) {
 
             }
 
-            // 把添加的 tr 绑定到当前 移除时使用
+            // 把添加的 tr 绑定到当前 移除时使用 独占一列时 将表格列分配+1
             this.addTR = $([
-              "<tr><td class='opTable-open-td'  colspan='" + (colArr.length + 1) + "'>"
+              "<tr><td class='opTable-open-td'  colspan='" + (colArr.length + (options.isAloneColumn ? 1 : 0)) + "'>"
               , "<div style='margin-left: 50px;display: none'></div>"
               , "</td></tr>"].join("")
             );
@@ -481,9 +499,9 @@ layui.define(['form', 'table'], function (exports) {
                 child.push("</div>");
                 html.push(child.join(""));
                 setTimeout(function () {
-                  layui.form.render();
+                  form.render();
                   //  监听 select 修改
-                  layui.form.on('select(' + colsItem.field + ')', function (data) {
+                  form.on('select(' + colsItem.field + ')', function (data) {
 
                     if (options.onEdit && colsItem.isEdit(data, openData)) {
                       var json = {};

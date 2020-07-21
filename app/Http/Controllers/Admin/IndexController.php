@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\AccessLog;
-use App\Models\Article;
-use App\Models\Permission;
-use App\Models\Role;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class IndexController extends Controller
@@ -37,6 +36,8 @@ class IndexController extends Controller
         $data = [
             'shortcut' => [
                 [
+                    ['title'=>'附件','url'=>route('admin.files'),'icon'=>'layui-icon-file'],
+                    ['title'=>'设置','url'=>route('admin.site'),'icon'=>'layui-icon-set'],
                     ['title'=>'管理员', 'url'=>route('admin.user'), 'icon'=>'layui-icon-user'],
                     ['title'=>'日志管理', 'url'=>route('admin.operation'), 'icon'=>'layui-icon-log'],
                 ],
@@ -44,8 +45,10 @@ class IndexController extends Controller
 
             'data_counts' =>[
                 [
-                    ['title'=>'管理员 ', 'url'=>'', 'count'=> User::count()],
-                    ['title'=>'日志 ', 'url'=>'', 'count'=> AccessLog::count()],
+                    ['title'=>'日志 ', 'url'=>'', 'count'=> AccessLog::query()->count()],
+                ],
+                [
+                    ['title'=>'管理员 ', 'url'=>'', 'count'=> User::query()->count()],
                 ],
             ],
 
@@ -60,24 +63,27 @@ class IndexController extends Controller
         ];
 
         $loginlog = [];
-        if (auth('admin')->user())
-        {
+        if (auth('admin')->user()) {
             $uuid = auth('admin')->user()->uuid;
-            $loginlog = User\LoginLog::where('uuid', trim($uuid))->orderBy('id','desc')->first();
+            $loginlog = User\LoginLog::where('uuid', trim($uuid))->orderBy('id','desc')->first(['ip','ipData','created_at']);
+            $loginlog['ipData'] = json_decode($loginlog['ipData'],true);
         }
 
-        return view('admin.index.index',compact('data','loginlog'));
+        return view('admin.index.index', compact('data','loginlog'));
     }
 
     public function search(Request $request)
     {
-        $t1 = microtime(true);
-        $data = $request->only(['keywords']);
-        $list = Article::search(trim($data['keywords']))->where('status',1)->paginate($request->get('limit', 10))->toArray();
-
-        $t2 = microtime(true);
-        $time = $t2-$t1;
-        return view('admin.index.sreach',compact('list','time'));
+        if ($request->ajax()) {
+            $get = $request->only(['keywords']);
+            $list = [];
+            return response()->json([
+                'code' => 0,
+                'msg' => '请求成功',
+                'data' => $list,
+            ]);
+        }
+        return view('admin.index.sreach');
     }
 
     public function line_chart(Request $request)
@@ -85,72 +91,83 @@ class IndexController extends Controller
         $data1 = $this->Get_platform_count();
         $data2 = $this->Get_browser_count();
 
-        $data = [
+        return response()->json([
             'code' => 0,
             'msg' => '请求成功',
             'data1' => $data1,
             'data2' => $data2,
-        ];
-        return response()->json($data);
+        ]);
     }
 
     public function Get_platform_count($limit=5)
     {
-        $names = [];
-        $acounts = [];
-        $dates = [];
         $weekarray = ['周日','周一','周二','周三','周四','周五','周六'];
 
-        $list  = AccessLog::distinct('platform')->limit($limit)->select('platform')->get()->toArray();
+        $list  = AccessLog::whereBetween('created_at',[Carbon::today()->subDays(count($weekarray)), Carbon::now()])
+            ->select('platform', DB::raw('DATE(created_at) as f_date'))->get()->toArray();
 
-        if (!empty($list)){
-            foreach ($list as $key => $row)
-            {
-                $names[] = empty($row['platform'])?'其他':$row['platform'];
-                $i = 6;
+        $dates = [];$names = [];$new_arr = [];
+        if (!empty($list)) {
+            $arr = [];
+            foreach ($list as $row) {
+
+                $platform = $row['platform'] = empty($row['platform'])?'其他':$row['platform'];
+                $f_date = $row['f_date'];
+                $i = count($weekarray)-1;
+
                 while (0 <= $i) {
-                    $time = date('Y-m-d', strtotime('-' . $i . ' day'));
-                    $start_time = $time . ' 00:00:00';
-                    $end_time = $time . ' 23:59:59';
-                    $dates[] = $weekarray[date("w",strtotime($time))];
-                    $acounts[$key][] = AccessLog::where('platform',$row['platform'])->whereBetween('created_at',[$start_time,$end_time])->count();
+                    $date = date('Y-m-d', strtotime('-' . $i . ' day'));
+                    $dates[$i] = $date;
+                    $count = $arr[$platform][$i]??0;
+
+                    if ($date == $f_date) {
+                        $count++;
+                    }
+
+                    $arr[$platform][$i] = $count;
                     --$i;
                 }
             }
+
+            $arr = array_slice($arr, 0 , $limit);
+            foreach ($arr as $key => $row) {
+                $names[] = $key;
+                $new_arr[] = Arr::flatten($row);
+            }
+            $dates = Arr::flatten($dates);
         }
 
-        $data = [
+        return [
             'charttitle' => '操作系统统计图',
             'names' => $names,
             'dates' => $dates,
-            'acounts' => $acounts
+            'acounts' => $new_arr
         ];
-        return $data;
     }
 
     public function Get_browser_count($limit = 5)
     {
-        $names = [];
-        $datas = [];
+        $names = [];$datas = [];
+        $list  =  AccessLog::select('browser',DB::raw('COUNT(id) as count'))->groupBy('browser')->take($limit)->get()->toArray();
 
-        $list  = AccessLog::distinct('browser')->limit($limit)->select('browser')->get()->toArray();
-        if (!empty($list)){
-            foreach ($list as $row)
-            {
-                $names[] = empty($row['browser'])?'其他':$row['browser'];
+        if (!empty($list)) {
+            foreach ($list as $row) {
+                $browser = empty($row['browser'])?'其他':$row['browser'];
+                $names[] = $browser;
                 $datas[] = [
-                    'name' => empty($row['browser'])?'其他':$row['browser'],
-                    'value' => AccessLog::where('browser',$row['browser'])->count()
+                    'name' => $browser,
+                    'value' => $row['count']
                 ];
             }
         }
-        $data = [
+
+        return [
             'charttitle' => '各浏览器分布图',
             'names' => $names,
             'datas' => $datas
         ];
-        return $data;
     }
+
 
     /**
      * @param Request $request
@@ -162,26 +179,35 @@ class IndexController extends Controller
         $model = $request->get('model');
         switch (strtolower($model)) {
             case 'user':
-                $query = new User();
+                $query = User::query()->select(['id','username','name','phone','email','created_at','updated_at']);
                 break;
             case 'role':
-                $query = new Role();
+                $query = \App\Models\Role::query()->select(['id','name','display_name','created_at','updated_at']);
                 break;
             case 'permission':
-                $query = new Permission();
-                $query = $query->where('parent_id', $request->get('parent_id', 0));
+                $query = \App\Models\Permission::query();
                 break;
             default:
-                $query = new User();
+                $query = User::query()->select(['id','username','name','phone','email','created_at','updated_at']);
                 break;
         }
-        $res = $query->paginate($request->get('limit', 20))->toArray();
-        $data = [
-            'code' => 0,
-            'msg' => '正在请求中...',
-            'count' => $res['total'],
-            'data' => $res['data']
-        ];
+
+        if (strtolower($model) == 'permission') {
+            $res = $query->get(['id','name','display_name','route','icon','parent_id','created_at','updated_at'])->toArray();
+            $data = [
+                'code' => 0,
+                'msg' => '正在请求中...',
+                'data' => $res
+            ];
+        }else{
+            $res = $query->paginate($request->get('limit', 20))->toArray();
+            $data = [
+                'code' => 0,
+                'msg' => '正在请求中...',
+                'count' => $res['total'],
+                'data' => $res['data']
+            ];
+        }
         return response()->json($data);
     }
 

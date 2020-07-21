@@ -1,7 +1,8 @@
 <?php
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
 use App\Helpers\File;
+use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
@@ -12,11 +13,12 @@ class PublicController extends Controller
     private $image_type = ["png", "jpg", "gif","jpeg","bmp"]; //图片类型
     private $upload_type = 'formData'; //上传方式
     private $storage = 'local'; //储存方式
+    private $request;
 
-    //文件上传
     public function FileUpload(Request $request)
     {
-        $param = $request->all();
+        $this->request = $request;
+        $param = $this->request->all();
         $upload_type = $this->upload_type;
         if(isset($param['upload_type']) && !empty($param['upload_type'])){
             $upload_type = $param['upload_type'];
@@ -44,21 +46,22 @@ class PublicController extends Controller
      */
     public function formData()
     {
-        $group_id = Request()->input('group_id',0);
+        $group_id = $this->request->input('group_id',0);
 
-        $config = (new \App\Models\Site)->getPluginset('attachment.set');
+        $config = \App\Models\Site::getPluginset('attachment.set');
         $image_type = isset($config['image_type']) ? explode('|',$config['image_type']) : $this->image_type;
         $image_size = isset($config['image_size']) ? $config['image_size'] : 2048;
         $file_type = isset($config['file_type']) ? explode('|',$config['file_type']) : $this->file_type;
         $file_size = isset($config['file_size']) ? $config['file_size'] : 2048;
+        $attachment_limit = isset($config['attachment_limit']) ? $config['attachment_limit'] : 0;
 
         $storage = isset($config['storage']) ? $config['storage'] : $this->storage;
 
         //返回信息json
         $data = ['code'=>200, 'msg'=>'上传失败', 'data'=>''];
-        $file = Request()->file('iFile');
+        $file = $this->request->file('iFile');
 
-        //检查文件是否上传完成
+        //检查文件是否上传完成`
         if ($file->isValid()){
             //检测文件类型
             $ext = $file->getClientOriginalExtension();
@@ -82,6 +85,15 @@ class PublicController extends Controller
                 $data['msg'] = "附件大小限制 ".$maxSize."M";
                 return $data;
             }
+
+            if ($attachment_limit > 0) {
+                $fsize = $this->foldersize(config('filesystems.disks.localupload.root'));
+                if ($attachment_limit*1024*1024 < intval($fsize + $ClientSize)) {
+                    $data['msg'] = "附件空间限制 ".$attachment_limit."M";
+                    return $data;
+                }
+            }
+
         }else{
             $data['msg'] = $file->getErrorMessage();
             return $data;
@@ -125,8 +137,8 @@ class PublicController extends Controller
 
         //返回信息json
         $data = ['code'=>200, 'msg'=>'上传失败', 'data'=>''];
-        $group_id = Request()->input('group_id',0);
-        $url = trim(Request()->input('url'));
+        $group_id = $this->request->input('group_id',0);
+        $url = trim($this->request->input('url'));
 
         $url_host =  parse_url($url, PHP_URL_HOST);
         $is_ip = preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/', $url_host);
@@ -163,11 +175,12 @@ class PublicController extends Controller
             $ext = $str[1];
         }
 
-        $config = (new \App\Models\Site)->getPluginset('attachment.set');
+        $config = \App\Models\Site::getPluginset('attachment.set');
         $image_type = isset($config['image_type']) ? explode('|',$config['image_type']) : $this->image_type;
         $image_size = isset($config['image_size']) ? $config['image_size'] : 2048;
         $file_type = isset($config['file_type']) ? explode('|',$config['file_type']) : $this->file_type;
         $file_size = isset($config['file_size']) ? $config['file_size'] : 2048;
+        $attachment_limit = isset($config['attachment_limit']) ? $config['attachment_limit'] : 0;
 
         $storage = isset($config['storage']) ? $config['storage'] : $this->storage;
 
@@ -188,6 +201,15 @@ class PublicController extends Controller
             $data['msg'] = "附件大小限制 ".$maxSize."M";
             return $data;
         }
+
+        if ($attachment_limit > 0) {
+            $fsize = $this->foldersize(config('filesystems.disks.localupload.root'));
+            if ($attachment_limit*1024*1024 < intval((int)$fsize + (int)$ClientSize)) {
+                $data['msg'] = "附件空间限制 ".$attachment_limit."M";
+                return $data;
+            }
+        }
+
         $filename = date('Ymd')."_".uniqid().".".$ext;
         $newFile = $str[0].'s/'.date('Ymd').'/'.$filename;
 
@@ -220,16 +242,33 @@ class PublicController extends Controller
         return $data;
     }
 
+    public function foldersize($path)
+    {
+        $total_size = 0;
+        $files = scandir($path);
+
+        foreach($files as $t) {
+            if (is_dir(rtrim($path, '/') . '/' . $t)) {
+                if ($t<>"." && $t<>"..") {
+                    $size = $this->foldersize(rtrim($path, '/') . '/' . $t);
+                    $total_size += $size;
+                }
+            } else {
+                $size = filesize(rtrim($path, '/') . '/' . $t);
+                $total_size += $size;
+            }
+        }
+        return $total_size;
+    }
+
     /**
      * @param $file_path
      * @param $storage
      * @return array
-     * Author: phpstorm
-     * Date: 2019/9/8 23:10
      */
     public function delfile($file_path,$storage)
     {
-        $storage = isset($storage)?$storage:$this->storage;
+        $storage = !empty($storage)?$storage:$this->storage;
         $data = File::del_file($file_path,$storage);
         return $data;
     }

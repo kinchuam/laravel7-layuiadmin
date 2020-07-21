@@ -2,11 +2,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Venturecraft\Revisionable\RevisionableTrait;
 
 class AttachmentRoup extends Model
 {
-    use RevisionableTrait;
     protected $table = 'attachment_group';
+    public $desc = '附件分组表';
     protected $fillable = ['name','sort'];
 }

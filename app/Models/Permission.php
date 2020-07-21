@@ -2,16 +2,17 @@
 
 namespace App\Models;
 
-use Venturecraft\Revisionable\RevisionableTrait;
+
+use DateTimeInterface;
 
 class Permission extends \Spatie\Permission\Models\Permission
 {
-    use RevisionableTrait;
     protected $guard_name = 'admin';
-    protected $casts = [
-        'created_at' => 'datetime:Y-m-d H:i:s',
-        'updated_at' => 'datetime:Y-m-d H:i:s',
-    ];
+    public $desc = '权限表';
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
+    }
     //子权限
     public function childs()
     {

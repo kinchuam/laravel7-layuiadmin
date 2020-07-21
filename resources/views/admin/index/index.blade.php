@@ -94,9 +94,9 @@
                         </div>
                         <div class="admin_user_left">
                             <ul class="list">
-                                <li>账号：<span class="c">{{ auth('admin')->user()->username??'' }}</span></li>
-                                <li>地址：<span class="c">{{ $loginlog->ip ?? ''}}</span></li>
-                                <li>时间：<span class="c">{{ $loginlog->created_at ?? '' }}</span></li>
+                                <li>账号：<span class="c">{{ !empty(auth('admin')->user())?auth('admin')->user()->username:'' }}</span></li>
+                                <li>地址：<span class="c">{{ (isset($loginlog['ipData'])?$loginlog['ipData']['state_name'].$loginlog['ipData']['city']:'') .' '.(isset($loginlog->ip)?'【'.$loginlog->ip.'】':'') }}</span></li>
+                                <li>时间：<span class="c">{{ !empty(auth('admin')->user())?auth('admin')->user()->created_at:'' }}</span></li>
                             </ul>
                             <div class="user_link layui-btn-group">
                                 <a lay-href="{{route('admin.set.index')}}" class="layui-btn layui-btn-primary new_tab" data-icon="layui-icon-chart-screen">个人信息</a>
@@ -145,22 +145,6 @@
                     </table>
                 </div>
             </div>
-
-            @if(config('custom.PUSH_MESSAGE_STATUS'))
-            <div class="layui-card">
-                <div class="layui-card-header">实时监控</div>
-                <div class="layui-card-body layadmin-takerates">
-                    <div class="layui-progress" lay-showPercent="yes" lay-filter="cpu_usage">
-                        <h3>CPU使用率</h3>
-                        <div class="layui-progress-bar" lay-percent="0%"></div>
-                    </div>
-                    <div class="layui-progress" lay-showPercent="yes" lay-filter="percent_used">
-                        <h3>内存占用率</h3>
-                        <div class="layui-progress-bar layui-bg-red" lay-percent="0%"></div>
-                    </div>
-                </div>
-            </div>
-            @endif
 
         </div>
 
@@ -256,50 +240,6 @@
                 });
             }
 
-            //心跳检测
-            var heartCheck = {
-                timeout: 5000,//60秒
-                timeoutObj: null,
-                reset: function(){
-                    clearInterval(this.timeoutObj);
-                    return this;
-                },
-                start: function(){
-                    this.timeoutObj = setInterval(function(){
-                        //这里发送一个心跳，后端收到后，返回一个心跳消息，
-                        ws.send('{"type": "systeminfo"}');
-                    }, this.timeout)
-                }
-            };
-            @if(config('custom.PUSH_MESSAGE_STATUS'))
-            // 连接服务端
-            ws = new WebSocket("{{config('custom.PUSH_MESSAGE_INFO')}}");
-            // 连接后登录
-            ws.onopen = function() {
-                ws.send('{"type": "systeminfo"}');
-                heartCheck.start();
-            };
-            // 后端推送来消息时
-            ws.onmessage = function(e) {
-                var data = JSON.parse(e.data);
-                if(data){
-                    element.progress('cpu_usage', data.cpu_usage+'%');
-                    element.progress('percent_used', data.percent_used+'%');
-
-                    if (data.cpu_usage>55) {
-                        $(".layadmin-takerates").find('div[lay-filter=cpu_usage] div').addClass('layui-bg-red');
-                    }else{
-                        $(".layadmin-takerates").find('div[lay-filter=cpu_usage] div').removeClass('layui-bg-red');
-                    }
-
-                    if (data.percent_used>55) {
-                        $(".layadmin-takerates").find('div[lay-filter=percent_used] div').addClass('layui-bg-red');
-                    }else{
-                        $(".layadmin-takerates").find('div[lay-filter=percent_used] div').removeClass('layui-bg-red');
-                    }
-                }
-            };
-            @endif
         });
     </script>
 @endsection

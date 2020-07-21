@@ -42,11 +42,11 @@
                 </div>
 
                 @can('config.site.update')
-                <div class="layui-form-item">
-                    <div class="layui-input-block">
-                        <button type="submit" class="layui-btn" lay-submit="" lay-filter="formDemo">确 认</button>
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button type="submit" class="layui-btn" lay-submit="" lay-filter="formDemo">确 认</button>
+                        </div>
                     </div>
-                </div>
                 @endcan
             </form>
         </div>

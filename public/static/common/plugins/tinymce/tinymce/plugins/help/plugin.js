@@ -4,7 +4,7 @@
  * For LGPL see License.txt in the project root for license information.
  * For commercial licenses see https://www.tiny.cloud/
  *
- * Version: 5.0.16 (2019-09-24)
+ * Version: 5.2.0 (2020-02-13)
  */
 (function () {
     'use strict';
@@ -693,6 +693,14 @@
       {
         key: 'tinycomments',
         name: 'Tiny Comments*'
+      },
+      {
+        key: 'advtable',
+        name: 'Advanced Tables*'
+      },
+      {
+        key: 'autocorrect',
+        name: 'Autocorrect*'
       }
     ];
     var PluginUrls = { urls: urls };
@@ -702,6 +710,7 @@
         var premiumPlugins = [
           'Accessibility Checker',
           'Advanced Code Editor',
+          'Advanced Tables',
           'Case Change',
           'Checklist',
           'Tiny Comments',
@@ -719,7 +728,7 @@
         var premiumPluginList = map(premiumPlugins, function (plugin) {
           return '<li>' + global$2.translate(plugin) + '</li>';
         }).join('');
-        return '<div data-mce-tabstop="1" tabindex="-1">' + '<p><b>' + global$2.translate('Premium plugins:') + '</b></p>' + '<ul>' + premiumPluginList + '<li style="list-style: none; margin-top: 1em;"><a href="https://www.tiny.cloud/pricing/?utm_campaign=editor_referral&utm_medium=help_dialog&utm_source=tinymce" target="_blank">' + global$2.translate('Learn more...') + '</a></li>' + '</ul>' + '</div>';
+        return '<div data-mce-tabstop="1" tabindex="-1">' + '<p><b>' + global$2.translate('Premium plugins:') + '</b></p>' + '<ul>' + premiumPluginList + '<li class="tox-help__more-link" "><a href="https://www.tiny.cloud/pricing/?utm_campaign=editor_referral&utm_medium=help_dialog&utm_source=tinymce" target="_blank">' + global$2.translate('Learn more...') + '</a></li>' + '</ul>' + '</div>';
       };
       var makeLink = curry(supplant, '<a href="${url}" target="_blank" rel="noopener">${name}</a>');
       var maybeUrlize = function (editor, key) {
@@ -802,6 +811,7 @@
     var tab$3 = function () {
       var body = {
         type: 'htmlpanel',
+        presets: 'document',
         html: description
       };
       return {

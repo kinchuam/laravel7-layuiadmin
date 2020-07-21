@@ -341,11 +341,24 @@ tfoot .price-inner{
 	margin-right: -15px;
 	margin-left: -15px;
 }
-.ordertable { width:100%;position: relative;margin-bottom:10px}
-.ordertable tr td:first-child { text-align: right }
-.ordertable tr td {padding:10px 5px 0;vertical-align: top}
-.ordertable1 tr td { text-align: right; }
-.ops .btn { padding:5px 10px;}
+.ordertable {
+	width:100%;
+	position: relative;
+	margin-bottom:10px
+}
+.ordertable tr td:first-child {
+	text-align: right
+}
+.ordertable tr td {
+	padding:10px 5px 0;
+	vertical-align: top;
+}
+.ordertable1 tr td {
+	text-align: right;
+}
+.ops .btn {
+	padding:5px 10px;
+}
 .col-md-12{
 	position: relative;
 	min-height: 1px;
@@ -418,3 +431,21 @@ ul, li, dl, dd, dt, p, ol, h1, h2, h3, h4, h5, img {
 .label.label-info {
 	background: #3abbdb !important;
 }
+
+body .layui-layout-admin .footer-demo{margin-top:90px;height: 40px; line-height: 40px; padding: 5px 0;}
+.footer{padding: 30px 0; line-height: 30px; text-align: center; color: #666; font-weight: 300;}
+.footer a{padding: 0 5px;}
+.site-union{color: #999;}
+.site-union>*{display: inline-block; vertical-align: middle;}
+.site-union a[sponsor] img{width: 80px;}
+.site-union span{position: relative; top: 5px;}
+.site-union span a{padding: 0; display: inline; color: #999;}
+.site-union span a:hover{text-decoration: underline;}
+.site-union .site-union-desc{display: block; margin-bottom: 10px;}
+
+.footer-demo p,
+.footer-demo .site-union,
+.footer-demo .site-union p{display: inline-block; vertical-align: middle; padding-right: 10px;}
+.footer-demo .site-union{position: relative; top: -5px;}
+.footer-demo .site-union .site-union-desc{margin-bottom: 0; padding-right: 0;}
+.footer-demo .site-union a[sponsor] img{position: relative; top: 3px;}

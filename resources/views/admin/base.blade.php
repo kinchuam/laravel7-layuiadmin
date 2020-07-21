@@ -12,7 +12,6 @@
 
     <link rel="stylesheet" href="{{ asset('static/common/layui/css/layui.css') }}" media="all">
     <link rel="stylesheet" href="{{ asset('static/common/style/admin.css') }}" media="all">
-    <link rel="stylesheet" href="{{ asset('static/common/style/template.css') }}" media="all">
     <link rel="stylesheet" href="{{ asset('static/admin/css/style.css') }}" media="all">
 </head>
 <body>
@@ -21,8 +20,8 @@
     @yield('content')
 </div>
 
-<script src="https://libs.baidu.com/jquery/1.11.1/jquery.min.js"></script>
-<script src="{{ asset('js/echarts.min.js') }}"></script>
+<script src="//cdn.bootcdn.net/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+<script src="{{ asset('static/admin/js/echarts.min.js') }}"></script>
 <script src="{{ asset('static/common/layui/layui.js') }}"></script>
 <script src="{{ asset('static/admin/js/admin.js') }}"></script>
 
@@ -39,17 +38,19 @@
         ,tag: 'plugins/tag/tag'
         ,opTable: 'plugins/opTable/opTable'
         ,notice: 'plugins/notice/notice'
-        ,fileManager: 'plugins/fileManager/fileManager'
+        ,IconFonts: 'plugins/iconFonts/iconFonts'
+        ,treeTable: 'plugins/treeTable/treeTable'
+        ,xmSelect: 'plugins/xmSelect/xm-select'
     }).use(['element','layer','notice'],function () {
         var layer = layui.layer;
 
         //错误提示
         @if(count($errors)>0)
-            @foreach($errors->all() as $error)
-                //layer.msg("{{$error}}",{icon:5});
-                layui.notice.error("{{$error}}");
-                @break
-            @endforeach
+        @foreach($errors->all() as $error)
+        //layer.msg("{{$error}}",{icon:5});
+        layui.notice.error("{{$error}}");
+        @break
+        @endforeach
         @endif
 
         //信息提示
@@ -63,6 +64,3 @@
 @yield('script')
 </body>
 </html>
-
-
-

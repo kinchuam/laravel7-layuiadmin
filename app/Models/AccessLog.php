@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 
 class AccessLog extends Model
 {
     protected $table = 'access_log';
-    protected $fillable = ['path', 'method', 'ip','type', 'input','agent','platform','browser','ipdata'];
-    protected $casts = [
-        'created_at' => 'datetime:Y-m-d H:i:s',
-    ];
+    protected $fillable = ['path', 'method', 'input','type', 'ip','agent','platform','browser','ipData'];
     protected $attributes = [
-        'ipdata' => '',
+        'ipData' => '',
     ];
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
+    }
 
     public static $methodColors = [
         'GET'    => '#43d543',

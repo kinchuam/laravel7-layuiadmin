@@ -37,12 +37,8 @@ class LoginController extends Controller
         }
 
         if ($this->attemptLogin($request)) {
-            LoginLog::create([
-                'ip' => $request->getClientIp(),
-                'uuid' => $this->guard()->user()?$this->guard()->user()->uuid:'',
-                'message' => '登录成功',
-                'agent' => $_SERVER['HTTP_USER_AGENT'],
-            ]);
+            $uuid = $this->guard()->user()?$this->guard()->user()->uuid:'';
+            $this->AddLog($uuid,'登录成功');
             return $this->sendLoginResponse($request);
         }
 
@@ -79,14 +75,8 @@ class LoginController extends Controller
         $uuid = $this->guard()->user()?$this->guard()->user()->uuid:'';
         $this->guard()->logout();
         $request->session()->invalidate();
-        if ($uuid) {
-            LoginLog::create([
-                'ip' => $request->getClientIp(),
-                'uuid' => $uuid,
-                'message' => '退出登录',
-                'agent' => $_SERVER['HTTP_USER_AGENT'],
-            ]);
-        }
+
+        $this->AddLog($uuid,'退出登录');
         return redirect(route('admin.login'));
     }
 
@@ -98,6 +88,23 @@ class LoginController extends Controller
     protected function guard()
     {
         return Auth::guard('admin');
+    }
+
+
+    protected function AddLog($uuid = '',$message = '')
+    {
+        if (empty($uuid)) { return false; }
+
+        $ip = request()->getClientIp();
+        $ipData = geoip($ip);
+        LoginLog::create([
+            'ip' => $ip,
+            'uuid' => $uuid,
+            'message' => $message,
+            'ipData' => json_encode($ipData['attributes']),
+            'agent' => $_SERVER['HTTP_USER_AGENT'],
+        ]);
+        return true;
     }
 
 }

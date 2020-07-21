@@ -4,7 +4,7 @@
  * For LGPL see License.txt in the project root for license information.
  * For commercial licenses see https://www.tiny.cloud/
  *
- * Version: 5.0.16 (2019-09-24)
+ * Version: 5.2.0 (2020-02-13)
  */
 (function (domGlobals) {
     'use strict';
@@ -1021,11 +1021,11 @@
 
     var global$7 = tinymce.util.Tools.resolve('tinymce.html.DomParser');
 
-    var global$8 = tinymce.util.Tools.resolve('tinymce.html.Node');
+    var global$8 = tinymce.util.Tools.resolve('tinymce.html.Serializer');
 
-    var global$9 = tinymce.util.Tools.resolve('tinymce.html.Schema');
+    var global$9 = tinymce.util.Tools.resolve('tinymce.html.Node');
 
-    var global$a = tinymce.util.Tools.resolve('tinymce.html.Serializer');
+    var global$a = tinymce.util.Tools.resolve('tinymce.html.Schema');
 
     var shouldBlockDrop = function (editor) {
       return editor.getParam('paste_block_drop', false);
@@ -1087,6 +1087,8 @@
       shouldUseDefaultFilters: shouldUseDefaultFilters
     };
 
+    var nbsp = '\xA0';
+
     function filter$1(content, items) {
       global$4.each(items, function (v) {
         if (v.constructor === RegExp) {
@@ -1098,7 +1100,7 @@
       return content;
     }
     function innerText(html) {
-      var schema = global$9();
+      var schema = global$a();
       var domParser = global$7({}, schema);
       var text = '';
       var shortEndedElements = schema.getShortEndedElements();
@@ -1146,7 +1148,7 @@
         if (!s1 && !s2) {
           return ' ';
         }
-        return '\xA0';
+        return nbsp;
       }
       html = filter$1(html, [
         /^[\s\S]*<body[^>]*>\s*|\s*<\/body[^>]*>[\s\S]*$/ig,
@@ -1258,7 +1260,7 @@
         }
         if (!currentListNode || currentListNode.name !== listName) {
           prevListNode = prevListNode || currentListNode;
-          currentListNode = new global$8(listName, 1);
+          currentListNode = new global$9(listName, 1);
           if (start > 1) {
             currentListNode.attr('start', '' + start);
           }
@@ -1370,11 +1372,11 @@
       });
       if (/(bold)/i.test(outputStyles['font-weight'])) {
         delete outputStyles['font-weight'];
-        node.wrap(new global$8('b', 1));
+        node.wrap(new global$9('b', 1));
       }
       if (/(italic)/i.test(outputStyles['font-style'])) {
         delete outputStyles['font-style'];
-        node.wrap(new global$8('i', 1));
+        node.wrap(new global$9('i', 1));
       }
       outputStyles = editor.dom.serializeStyle(outputStyles, node.name);
       if (outputStyles) {
@@ -1399,17 +1401,17 @@
         ],
         [
           /&nbsp;/gi,
-          '\xA0'
+          nbsp
         ],
         [
           /<span\s+style\s*=\s*"\s*mso-spacerun\s*:\s*yes\s*;?\s*"\s*>([\s\u00a0]*)<\/span>/gi,
           function (str, spaces) {
-            return spaces.length > 0 ? spaces.replace(/./, ' ').slice(Math.floor(spaces.length / 2)).split('').join('\xA0') : '';
+            return spaces.length > 0 ? spaces.replace(/./, ' ').slice(Math.floor(spaces.length / 2)).split('').join(nbsp) : '';
           }
         ]
       ]);
       var validElements = Settings.getWordValidElements(editor);
-      var schema = global$9({
+      var schema = global$a({
         valid_elements: validElements,
         valid_children: '-li[p]'
       });
@@ -1485,7 +1487,7 @@
       if (Settings.shouldConvertWordFakeLists(editor)) {
         convertFakeListsToProperLists(rootNode);
       }
-      content = global$a({ validate: editor.settings.validate }, schema).serialize(rootNode);
+      content = global$8({ validate: editor.settings.validate }, schema).serialize(rootNode);
       return content;
     };
     var preProcess = function (editor, content) {
@@ -1496,6 +1498,19 @@
       isWordContent: isWordContent
     };
 
+    var preProcess$1 = function (editor, html) {
+      var parser = global$7({}, editor.schema);
+      parser.addNodeFilter('meta', function (nodes) {
+        global$4.each(nodes, function (node) {
+          return node.remove();
+        });
+      });
+      var fragment = parser.parse(html, {
+        forced_root_block: false,
+        isRootContent: true
+      });
+      return global$8({ validate: editor.settings.validate }, editor.schema).serialize(fragment);
+    };
     var processResult = function (content, cancelled) {
       return {
         content: content,
@@ -1509,10 +1524,11 @@
     };
     var filterContent = function (editor, content, internal, isWordHtml) {
       var preProcessArgs = Events.firePastePreProcess(editor, content, internal, isWordHtml);
+      var filteredContent = preProcess$1(editor, preProcessArgs.content);
       if (editor.hasEventListeners('PastePostProcess') && !preProcessArgs.isDefaultPrevented()) {
-        return postProcessFilter(editor, preProcessArgs.content, internal, isWordHtml);
+        return postProcessFilter(editor, filteredContent, internal, isWordHtml);
       } else {
-        return processResult(preProcessArgs.content, preProcessArgs.isDefaultPrevented());
+        return processResult(filteredContent, preProcessArgs.isDefaultPrevented());
       }
     };
     var process = function (editor, html, internal) {
@@ -1522,15 +1538,8 @@
     };
     var ProcessFilters = { process: process };
 
-    var removeMeta = function (editor, html) {
-      var body = editor.dom.create('body', {}, html);
-      global$4.each(body.querySelectorAll('meta'), function (elm) {
-        return elm.parentNode.removeChild(elm);
-      });
-      return body.innerHTML;
-    };
     var pasteHtml = function (editor, html) {
-      editor.insertContent(removeMeta(editor, html), {
+      editor.insertContent(html, {
         merge: Settings.shouldMergeFormats(editor),
         paste: true
       });
@@ -1573,8 +1582,8 @@
         return action(editor, html, pasteHtml) !== true;
       });
     };
-    var insertContent = function (editor, html) {
-      if (Settings.isSmartPasteEnabled(editor) === false) {
+    var insertContent = function (editor, html, pasteAsText) {
+      if (pasteAsText || Settings.isSmartPasteEnabled(editor) === false) {
         pasteHtml(editor, html);
       } else {
         smartInsertContent(editor, html);
@@ -1597,11 +1606,11 @@
     };
     var normalizeWhitespace = function (text) {
       var result = foldl(text, function (acc, c) {
-        if (isCollapsibleWhitespace(c) || c === '\xA0') {
+        if (isCollapsibleWhitespace(c) || c === nbsp) {
           if (acc.pcIsSpace || acc.str === '' || acc.str.length === text.length - 1 || isNewline(text, acc.str.length + 1)) {
             return {
               pcIsSpace: false,
-              str: acc.str + '\xA0'
+              str: acc.str + nbsp
             };
           } else {
             return {
@@ -1622,18 +1631,21 @@
       return result.str;
     };
 
+    var doPaste = function (editor, content, internal, pasteAsText) {
+      var args = ProcessFilters.process(editor, content, internal);
+      if (args.cancelled === false) {
+        SmartPaste.insertContent(editor, args.content, pasteAsText);
+      }
+    };
     var pasteHtml$1 = function (editor, html, internalFlag) {
       var internal = internalFlag ? internalFlag : InternalHtml.isMarked(html);
-      var args = ProcessFilters.process(editor, InternalHtml.unmark(html), internal);
-      if (args.cancelled === false) {
-        SmartPaste.insertContent(editor, args.content);
-      }
+      doPaste(editor, InternalHtml.unmark(html), internal, false);
     };
     var pasteText = function (editor, text) {
       var encodedText = editor.dom.encode(text).replace(/\r\n/g, '\n');
       var normalizedText = normalizeWhitespace(encodedText);
       var html = Newlines.convert(normalizedText, editor.settings.forced_root_block, editor.settings.forced_root_block_attrs);
-      pasteHtml$1(editor, html, false);
+      doPaste(editor, html, false, true);
     };
     var getDataTransferItems = function (dataTransfer) {
       var items = {};
@@ -1796,7 +1808,7 @@
         }
       });
       function insertClipboardContent(clipboardContent, isKeyBoardPaste, plainTextMode, internal) {
-        var content, isPlainTextHtml;
+        var content, isPlainTextHtml, isImage;
         if (hasContentType(clipboardContent, 'text/html')) {
           content = clipboardContent['text/html'];
         } else {
@@ -1809,10 +1821,11 @@
         content = Utils.trimHtml(content);
         pasteBin.remove();
         isPlainTextHtml = internal === false && Newlines.isPlainText(content);
-        if (!content.length || isPlainTextHtml) {
+        isImage = SmartPaste.isImageUrl(content);
+        if (!content.length || isPlainTextHtml && !isImage) {
           plainTextMode = true;
         }
-        if (plainTextMode) {
+        if (plainTextMode || isImage) {
           if (hasContentType(clipboardContent, 'text/plain') && isPlainTextHtml) {
             content = clipboardContent['text/plain'];
           } else {
@@ -2044,8 +2057,6 @@
       };
     };
 
-    var noop$1 = function () {
-    };
     var hasWorkingClipboardApi = function (clipboardData) {
       return global$2.iOS === false && clipboardData !== undefined && typeof clipboardData.setData === 'function' && Utils.isMsEdge() !== true;
     };
@@ -2117,9 +2128,15 @@
       return function (evt) {
         if (hasSelectedContent(editor)) {
           setClipboardData(evt, getData(editor), fallback(editor), function () {
-            global$3.setTimeout(function () {
+            if (global$2.browser.isChrome()) {
+              var rng_1 = editor.selection.getRng();
+              global$3.setEditorTimeout(editor, function () {
+                editor.selection.setRng(rng_1);
+                editor.execCommand('Delete');
+              }, 0);
+            } else {
               editor.execCommand('Delete');
-            }, 0);
+            }
           });
         }
       };
@@ -2127,7 +2144,8 @@
     var copy = function (editor) {
       return function (evt) {
         if (hasSelectedContent(editor)) {
-          setClipboardData(evt, getData(editor), fallback(editor), noop$1);
+          setClipboardData(evt, getData(editor), fallback(editor), function () {
+          });
         }
       };
     };

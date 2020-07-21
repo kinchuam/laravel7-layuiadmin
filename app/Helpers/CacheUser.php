@@ -11,8 +11,7 @@ class CacheUser
 {
 
     public static function user($id){
-        if(!$id||$id<=0||!is_numeric($id))
-        {
+        if(!$id||$id<=0||!is_numeric($id)) {
             return false;
         } // if $id is not a reasonable integer, return false instead of checking users table
 

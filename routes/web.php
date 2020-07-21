@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', 'HomeController@index')->name('home');
+Route::get('/', 'HomeController@index')->name('home.index');
 
-Route::post('FileUpload', 'PublicController@FileUpload')->name('FileUpload');
+Route::get('/images/{file}', 'DocumentController@get_images_url')->name('images.get_url');
+Route::get('/file/{file}', 'DocumentController@get_file_url')->name('file.get_url');
+
 
