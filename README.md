@@ -18,11 +18,11 @@
 - 主页
 ![Image text](https://images.gitee.com/uploads/images/2020/0721/163637_72ea66e6_852966.png "11.png")
 - 用户
-![输入图片说明](https://images.gitee.com/uploads/images/2020/0721/163742_ef267707_852966.png "13.png")
+![Image text](https://images.gitee.com/uploads/images/2020/0721/163742_ef267707_852966.png "13.png")
 - 权限
-![输入图片说明](https://images.gitee.com/uploads/images/2020/0721/163749_ccf924fc_852966.png "14.png")
+![Image text](https://images.gitee.com/uploads/images/2020/0721/163749_ccf924fc_852966.png "14.png")
 - 日志
-![输入图片说明](https://images.gitee.com/uploads/images/2020/0721/163757_f317b262_852966.png "15.png")
+![Image text](https://images.gitee.com/uploads/images/2020/0721/163757_f317b262_852966.png "15.png")
 - 设置
-![输入图片说明](https://images.gitee.com/uploads/images/2020/0721/163807_27f0d37c_852966.png "16.png")
+![Image text](https://images.gitee.com/uploads/images/2020/0721/163807_27f0d37c_852966.png "16.png")
 # laravel7-layuiadmin
