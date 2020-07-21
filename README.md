@@ -8,21 +8,21 @@
 - php artisan migrate
 - php artisan db:seed
 - php artisan key:generate
-- 后台地址： 域名/admin
+- 后台地址： 域名/admin;  账号：username  密码：password
 
-#### 全文搜索需要在.env 添加这两行
-- SCOUT_DRIVER=tntsearch
-- SCOUT_QUEUE=true
+![输入图片说明](https://images.gitee.com/uploads/images/2020/0721/163819_1d28934e_852966.png "5.png")
+
+#### 全文搜索建议使用拓展 matchish/laravel-scout-elasticsearch
 
 ## 图片展示
 - 主页
-![Image text](https://raw.githubusercontent.com/kinchuam/laravel7-layuiadmin/master/public/images/11.png?raw=true)
+![Image text](https://images.gitee.com/uploads/images/2020/0721/163637_72ea66e6_852966.png "11.png")
 - 用户
-![Image text](https://raw.githubusercontent.com/kinchuam/laravel7-layuiadmin/master/public/images/12.png?raw=true)
+![输入图片说明](https://images.gitee.com/uploads/images/2020/0721/163742_ef267707_852966.png "13.png")
 - 权限
-![Image text](https://raw.githubusercontent.com/kinchuam/laravel7-layuiadmin/master/public/images/13.png?raw=true)
+![输入图片说明](https://images.gitee.com/uploads/images/2020/0721/163749_ccf924fc_852966.png "14.png")
 - 日志
-![Image text](https://raw.githubusercontent.com/kinchuam/laravel7-layuiadmin/master/public/images/14.png?raw=true)
+![输入图片说明](https://images.gitee.com/uploads/images/2020/0721/163757_f317b262_852966.png "15.png")
 - 设置
-![Image text](https://raw.githubusercontent.com/kinchuam/laravel7-layuiadmin/master/public/images/15.png?raw=true)
+![输入图片说明](https://images.gitee.com/uploads/images/2020/0721/163807_27f0d37c_852966.png "16.png")
 # laravel7-layuiadmin
