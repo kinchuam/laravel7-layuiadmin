@@ -28,6 +28,12 @@ class EventServiceProvider extends ServiceProvider
     {
         parent::boot();
 
+        $observers = config('power.event.observers');
+        if (is_array($observers)) {
+            foreach ($observers as $observer) {
+                $observer::observe(\App\Observer\ModelObserver::class);
+            }
+        }
         //
     }
 }
