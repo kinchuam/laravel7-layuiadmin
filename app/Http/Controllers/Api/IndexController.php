@@ -3,12 +3,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\ApiController;
 
-class IndexController extends  Controller
+class IndexController extends ApiController
 {
 
-    public function index()
+    public function index(): \Illuminate\Http\JsonResponse
     {
         return $this->app_json();
     }

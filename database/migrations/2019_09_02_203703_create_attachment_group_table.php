@@ -15,10 +15,9 @@ class CreateAttachmentGroupTable extends Migration
     {
         Schema::create('attachment_group', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('name',50)->comment('名称');
-            $table->tinyInteger('sort')->default(0)->comment('排序');
+            $table->string('name',50)->index();
+            $table->tinyInteger('sort')->default(0);
             $table->timestamps();
-            $table->index('name');
         });
     }
 

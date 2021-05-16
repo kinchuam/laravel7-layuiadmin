@@ -8,11 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class AccessLog extends Model
 {
     protected $table = 'access_log';
-    protected $fillable = ['path', 'method', 'input','type', 'ip','agent','platform','browser','ipData'];
+
+    protected $fillable = ['path', 'method', 'input', 'type', 'ip', 'platform', 'browser', 'ip_data', 'agent'];
+
     protected $attributes = [
-        'ipData' => '',
+        'agent' => '',
     ];
-    protected function serializeDate(DateTimeInterface $date)
+
+    protected function serializeDate(DateTimeInterface $date): string
     {
         return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
     }

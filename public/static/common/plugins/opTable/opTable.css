@@ -56,9 +56,29 @@ html #layuicss-opTable {
     font-size: 16px;
 }
 
+/*垂直排列 一个 item 占一行 */
 .opTable-open-item-div[opOrientation='v'] {
     display: block;
 }
+
+/*垂直排列 两个 item 占一行 两列*/
+.opTable-open-item-div[opOrientation='v2'] {
+    display: inline-block;
+    width: 50%;
+}
+
+/*垂直排列 三个 item 占一行 三列*/
+.opTable-open-item-div[opOrientation='v3'] {
+    display: inline-block;
+    width: 30%;
+}
+
+/*垂直排列 四个 item 占一行 四列*/
+.opTable-open-item-div[opOrientation='v4'] {
+    display: inline-block;
+    width: 25%;
+}
+
 
 /*水平排列*/
 .opTable-open-item-div[opOrientation='h'] {
@@ -71,7 +91,7 @@ html #layuicss-opTable {
 }
 
 
-/*展开列 可修改 */
+/*展开列 可修改*/
 .opTable-exp-value-edit {
     background-color: #F6F6F6;
 }
@@ -98,4 +118,31 @@ html #layuicss-opTable {
     text-align: center;
     height: 80px;
     padding-top: 16px;
+}
+
+/*帮助图标*/
+.opTable-span-help {
+    width: 16px;
+    height: 12px;
+    user-select: none;
+    background: url(icon/optable-cols-help.svg) 0 0 no-repeat;
+    background-size: 16px 12px !important;
+    margin-left: 6px;
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.op-span-help-close {
+    display: inline-block;
+    margin-left: 4px;
+    color: #1E9FFF;
+    cursor: pointer;
+}
+
+/*编辑可显示列*/
+.op-edit-field-btn{
+    text-align: center;
+    padding-top: 5px;
+    border-top: #dedede solid 1px
 }

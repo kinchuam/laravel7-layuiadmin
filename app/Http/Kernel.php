@@ -37,7 +37,6 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
 
-            \App\Http\Middleware\LogOperation::class,
         ],
 
         'admin' => [
@@ -55,7 +54,6 @@ class Kernel extends HttpKernel
             'throttle:60,1',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \Fruitcake\Cors\HandleCors::class,
-            \App\Http\Middleware\LogOperation::class,
         ],
     ];
 
@@ -80,5 +78,6 @@ class Kernel extends HttpKernel
 
         'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
         'role'       => \Spatie\Permission\Middlewares\RoleMiddleware::class,
+        'operation' => \App\Http\Middleware\OperationMiddleware::class,
     ];
 }

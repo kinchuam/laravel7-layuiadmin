@@ -2,15 +2,15 @@
 
 @section('content')
     <div class="layui-card">
-        <div class="layui-form  layui-card-header layuiadmin-card-header-auto" lay-filter="layadmin-userfront-formlist">
+        <div class="layui-form layui-card-body">
             <div class="layui-form-item">
 
                 <div class="layui-inline">
                     <div class="layui-input-inline">
-                        <select name="method" id="method" lay-search>
+                        <select name="method" lay-search>
                             <option value="">Method</option>
                             @foreach($methods as $method)
-                                <option value="{{$method}}">{{$method}}</option>
+                                <option value="{{ $method }}">{{ $method }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -18,12 +18,12 @@
 
                 <div class="layui-inline">
                     <div class="layui-input-inline">
-                        <input type="text" name="path" id="path" placeholder="Path" class="layui-input" >
+                        <input type="text" name="path" placeholder="Path" class="layui-input" >
                     </div>
                 </div>
                 <div class="layui-inline">
                     <div class="layui-input-inline">
-                        <input type="text" name="ip" id="ip" placeholder="Ip" class="layui-input" >
+                        <input type="text" name="ip" placeholder="Ip" class="layui-input" >
                     </div>
                 </div>
 
@@ -39,71 +39,59 @@
             <table id="dataTable" lay-filter="dataTable"></table>
             <script type="text/html" id="options">
                 <div class="layui-btn-group">
-                    <a class="layui-btn layui-btn-sm" lay-event="show">查看</a>
+                    @can('logs.access.show')
+                        <a class="layui-btn layui-btn-sm" lay-event="show" title="查看"><i class="fa fa-eye"></i></a>
+                    @endcan
                 </div>
             </script>
-
         </div>
     </div>
 @endsection
 
 @section('script')
-    @can('logs.access')
-        <script>
-            layui.use(['layer','opTable','form','table'],function () {
-                var layer = layui.layer,opTable = layui.opTable,form = layui.form,table = layui.table;
-
-                var dataTable = opTable.render({
+    <script>
+        layui.use(['opTable','table','form','okLayer'],function () {
+            let form = layui.form,
+                opTable = layui.opTable,
+                table = layui.table,
+                okLayer = layui.okLayer,
+                dataTable = opTable.render({
                     elem: '#dataTable'
                     ,url: "{{ route('admin.access.data') }}"
                     ,page: true
                     ,cols: [[
                         {field: 'ip', title: 'Ip地址'}
-                        ,{field: 'method', title: '请求方式',templet: function (it) {
+                        ,{field: 'method', title: '请求方式', width:90, templet: function (it) {
                                 return '<span class="layui-btn layui-btn-xs" style="background-color: '+it.method_color+';">'+it.method+'</span>'
-                            },width:90}
+                            }}
                         ,{field: 'path', title: '请求地址'}
-                        ,{field: 'system_browser', title: '信息',}
-                        ,{field: 'created_at', title: '创建时间'}
-                        ,{fixed: 'right', width: 120, align:'center', toolbar: '#options'}
+                        ,{field: 'platform_browser', title: '系统信息', width: 250, templet:function (d) {
+                                return d.platform +' '+ d.browser;
+                            }}
+                        ,{field: 'created_at', title: '创建时间', width: 180}
+                        ,{fixed: 'right', width: 100, align:'center', toolbar: '#options'}
                     ]]
                     , openCols: [{
-                        field: 'code', title: '数据', templet: function (it) {
-                            if (!it.code) {
-                                return "暂无示例代码"
-                            }
-                            return "<pre class='layui-code' >" + JSON.stringify(JSON.parse(it.code), null, 2) + "</pre>";
+                        field: 'input', title: '数据', templet: function (it) {
+                            if (!it.input) { return "无数据" }
+                            return "<pre class='layui-code' >" + JSON.stringify(JSON.parse(it.input), null, 2) + "</pre>";
                         }
                     }]
                 });
 
-                //监听工具条
-                table.on('tool(dataTable)', function(obj){
-                    var data = obj.data
-                        ,layEvent = obj.event;
-                    if(layEvent === 'del'){
-                        layer.confirm('确认删除吗？', function(index){
-                            $.post("{{ route('admin.access.destroy') }}",{_method:'delete',ids:[data.id]},function (result) {
-                                if (result.code==0){
-                                    obj.del();
-                                }
-                                layer.close(index);
-                                layer.msg(result.msg);
-                            });
-                        });
-                    }else if(layEvent==='show'){
-                        active.openLayerForm('{{Request()->getbaseUrl()}}/admin/access/'+data.id+'/show','详情',{'btn':false,'width':'70%','height':'60%'});
-                    }
-                });
+            table.on('tool(dataTable)', function(obj){
+                let data = obj.data, layEvent = obj.event;
+                if(layEvent === 'show'){
+                    okLayer.open('详情', getRouteUrl('admin/access/'+data.id+'/show'), {btn: false, width: '70%', height: '60%'});
+                }
+            });
 
-                //搜索
-                form.on('submit(searchBtn)', function(data){
-                    dataTable.reload({
-                        where:data.field,
-                        page:{curr:1}
-                    })
-                });
-            })
-        </script>
-    @endcan
+            form.on('submit(searchBtn)', function(data){
+                dataTable.reload({
+                    where:data.field,
+                    page:{curr:1}
+                })
+            });
+        });
+    </script>
 @endsection

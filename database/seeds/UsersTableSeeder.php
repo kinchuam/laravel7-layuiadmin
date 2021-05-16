@@ -3,6 +3,7 @@
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class UsersTableSeeder extends Seeder
 {
@@ -14,28 +15,28 @@ class UsersTableSeeder extends Seeder
     public function run()
     {
         //清空表
-        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        \Illuminate\Support\Facades\DB::table('model_has_permissions')->truncate();
-        \Illuminate\Support\Facades\DB::table('model_has_roles')->truncate();
-        \Illuminate\Support\Facades\DB::table('role_has_permissions')->truncate();
-        \Illuminate\Support\Facades\DB::table('users')->truncate();
-        \Illuminate\Support\Facades\DB::table('users_login_log')->truncate();
-        \Illuminate\Support\Facades\DB::table('roles')->truncate();
-        \Illuminate\Support\Facades\DB::table('permissions')->truncate();
-        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('model_has_permissions')->truncate();
+        DB::table('model_has_roles')->truncate();
+        DB::table('role_has_permissions')->truncate();
+        DB::table('users')->truncate();
+        DB::table('users_login_log')->truncate();
+        DB::table('roles')->truncate();
+        DB::table('permissions')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        $setdata = [
+        $data = [
             'username' => 'root',
-            'password' => Str::random(8)
+            'password' => 'root123',
         ];
         //用户
         $user = \App\Models\User::create([
-            'username' => $setdata['username'],
-            'phone' => '12345678910',
+            'username' => $data['username'],
+            'phone' => '12888888888',
             'name' => '超级管理员',
             'email' => 'root@xxx.com',
-            'password' => bcrypt($setdata['password']),
-            'uuid' => \Faker\Provider\Uuid::uuid()
+            'password' => bcrypt($data['password']),
+            'uuid' => Str::uuid()
         ]);
 
         //角色
@@ -45,7 +46,63 @@ class UsersTableSeeder extends Seeder
         ]);
 
         //权限
-        $permissions = [
+        $permissions = $this->getPermissions();
+
+        foreach ($permissions as $pem1) {
+            //生成一级权限
+            $p1 = $this->addPermissions(0, $pem1, $role);
+            if (isset($pem1['child'])) {
+                foreach ($pem1['child'] as $pem2) {
+                    //生成二级权限
+                    $p2 = $this->addPermissions($p1['id'], $pem2, $role);
+                    if (isset($pem2['child'])) {
+                        foreach ($pem2['child'] as $pem3) {
+                            //生成三级权限
+                            $this->addPermissions($p2['id'], $pem3, $role);
+                        }
+                    }
+
+                }
+            }
+        }
+
+        //为用户添加角色
+        $user->assignRole($role);
+        //初始化的角色
+        $roles = [
+            ['name' => 'editor', 'display_name' => '编辑人员'],
+            ['name' => 'admin', 'display_name' => '管理员'],
+        ];
+        foreach ($roles as $role) {
+            \App\Models\Role::create($role);
+        }
+
+        Artisan::call('cache:clear');
+        echo '------------------------------'."\n";
+        echo "url: ".config('app.url')."/admin \n";
+        echo 'username: '.$data['username']."\n";
+        echo 'password: '.$data['password']."\n";
+        echo '------------------------------'."\n";
+    }
+
+    protected function addPermissions($parent_id, $pem, $role)
+    {
+        $item = \App\Models\Permission::create([
+            'name' => $pem['name'],
+            'display_name' => $pem['display_name'],
+            'parent_id' => intval($parent_id),
+            'route' => $pem['route']?:'',
+            'icon' => $pem['icon'] ?? '',
+        ]);
+        //为角色添加权限
+        $role->givePermissionTo($item);
+        return $item;
+    }
+
+
+    protected function getPermissions()
+    {
+        return [
             [
                 'name' => 'content.manage',
                 'display_name' => '内容管理',
@@ -55,14 +112,27 @@ class UsersTableSeeder extends Seeder
                     [
                         'name' => 'content.files',
                         'display_name' => '附件管理',
-                        'route' => 'admin.files',
+                        'route' => 'admin.content.files',
                         'icon' => 'layui-icon-auz',
+                        'genre' => 1,
                         'child' => [
-                            ['name' => 'content.files.create', 'display_name' => '添加附件','route'=>'admin.files.create'],
-                            ['name' => 'content.files.destroy', 'display_name' => '删除附件','route'=>'admin.files.destroy'],
-                            ['name' => 'content.files.recycle', 'display_name' => '回收站','route'=>'admin.files.recycle'],
-                            ['name' => 'content.files.recover', 'display_name' => '回收站恢复','route'=>'admin.files.recover'],
-                            ['name' => 'content.files.expurgate', 'display_name' => '回收站删除','route'=>'admin.files.expurgate'],
+                            ['name' => 'content.files.create', 'display_name' => '添加附件', 'route'=>'admin.content.files.create'],
+                            ['name' => 'content.files.destroy', 'display_name' => '删除附件', 'route'=>'admin.content.files.destroy'],
+                            ['name' => 'content.files.recycle', 'display_name' => '回收站', 'route'=>'admin.content.files.recycle'],
+                            ['name' => 'content.files.recover', 'display_name' => '回收站恢复', 'route'=>'admin.content.files.recover'],
+                            ['name' => 'content.files.expurgate', 'display_name' => '回收站删除', 'route'=>'admin.content.files.expurgate'],
+                        ]
+                    ],
+                    [
+                        'name' => 'content.files_group',
+                        'display_name' => '附件分组',
+                        'route' => 'admin.content.files_group',
+                        'icon' => 'layui-icon-auz',
+                        'genre' => 1,
+                        'child' => [
+                            ['name' => 'content.files_group.create', 'display_name' => '添加分组', 'route' => 'admin.content.files_group.create'],
+                            ['name' => 'content.files_group.edit', 'display_name' => '编辑分组', 'route' => 'admin.content.files_group.edit'],
+                            ['name' => 'content.files_group.destroy', 'display_name' => '删除分组', 'route' => 'admin.content.files_group.destroy'],
                         ]
                     ],
                 ]
@@ -75,15 +145,16 @@ class UsersTableSeeder extends Seeder
                 'child' => [
                     [
                         'name' => 'system.user',
-                        'display_name' => '用户管理',
+                        'display_name' => '账号管理',
                         'route' => 'admin.user',
                         'icon' => 'layui-icon-friends',
+                        'genre' => 1,
                         'child' => [
-                            ['name' => 'system.user.create', 'display_name' => '添加用户','route'=>'admin.user.create'],
-                            ['name' => 'system.user.edit', 'display_name' => '编辑用户','route'=>'admin.user.edit'],
-                            ['name' => 'system.user.destroy', 'display_name' => '删除用户','route'=>'admin.user.destroy'],
-                            ['name' => 'system.user.role', 'display_name' => '分配角色','route'=>'admin.user.role'],
-                            ['name' => 'system.user.permission', 'display_name' => '分配权限','route'=>'admin.user.permission'],
+                            ['name' => 'system.user.create', 'display_name' => '添加账号', 'route'=>'admin.user.create'],
+                            ['name' => 'system.user.edit', 'display_name' => '编辑账号', 'route'=>'admin.user.edit'],
+                            ['name' => 'system.user.destroy', 'display_name' => '删除账号', 'route'=>'admin.user.destroy'],
+                            ['name' => 'system.user.role', 'display_name' => '分配角色', 'route'=>'admin.user.role'],
+                            ['name' => 'system.user.permission', 'display_name' => '分配权限', 'route'=>'admin.user.permission'],
                         ]
                     ],
                     [
@@ -112,37 +183,6 @@ class UsersTableSeeder extends Seeder
                 ]
             ],
             [
-                'name' => 'logs.manage',
-                'display_name' => '日志管理',
-                'route' => '',
-                'icon' => 'layui-icon-log',
-                'child' => [
-                    [
-                        'name' => 'logs.operation',
-                        'display_name' => '操作日志',
-                        'route' => 'admin.operation',
-                        'icon' => 'layui-icon-set',
-                        'child' => []
-                    ],
-                    [
-                        'name' => 'logs.access',
-                        'display_name' => '访问日志',
-                        'route' => 'admin.access',
-                        'icon' => 'layui-icon-set',
-                        'child' => [
-                            ['name' => 'logs.access.destroy', 'display_name' => '删除日志','route'=>'admin.access.destroy'],
-                        ]
-                    ],
-                    [
-                        'name' => 'logs.error',
-                        'display_name' => '错误日志',
-                        'route' => 'admin.logs',
-                        'icon' => 'layui-icon-set',
-                        'child' => []
-                    ],
-                ]
-            ],
-            [
                 'name' => 'config.manage',
                 'display_name' => '系统设置',
                 'route' => '',
@@ -153,8 +193,9 @@ class UsersTableSeeder extends Seeder
                         'display_name' => '基础设置',
                         'route' => 'admin.site',
                         'icon' => 'layui-icon-website',
+                        'genre' => 1,
                         'child' => [
-                            ['name' => 'config.site.update', 'display_name' => '更新配置','route'=>'admin.site.update'],
+                            ['name' => 'config.site.update', 'display_name' => '更新配置', 'route'=>'admin.site.update'],
                         ]
                     ],
                     [
@@ -162,8 +203,19 @@ class UsersTableSeeder extends Seeder
                         'display_name' => '上传配置',
                         'route' => 'admin.attachment',
                         'icon' => 'layui-icon-set-fill',
+                        'genre' => 1,
                         'child' => [
-                            ['name' => 'config.attachment.update', 'display_name' => '更新配置','route'=>'admin.attachment.update'],
+                            ['name' => 'config.attachment.update', 'display_name' => '更新配置', 'route'=>'admin.attachment.update'],
+                        ]
+                    ],
+                    [
+                        'name' => 'config.dateCache',
+                        'display_name' => '更新缓存',
+                        'route' => 'admin.dateCache',
+                        'icon' => 'layui-icon-set-fill',
+                        'genre' => 1,
+                        'child' => [
+                            ['name' => 'config.clearCache', 'display_name' => '更新缓存', 'route'=>'admin.clearCache'],
                         ]
                     ],
                     [
@@ -171,114 +223,54 @@ class UsersTableSeeder extends Seeder
                         'display_name' => '配置信息',
                         'route' => 'admin.optimize',
                         'icon' => 'layui-icon-set-fill',
+                        'genre' => 1,
                         'child' => []
-                    ],
-                    [
-                        'name' => 'config.datecache',
-                        'display_name' => '更新缓存',
-                        'route' => 'admin.datecache',
-                        'icon' => 'layui-icon-set-fill',
-                        'child' => [
-                            ['name' => 'config.clearcache', 'display_name' => '更新缓存','route'=>'admin.clearcache'],
-                        ]
                     ],
                 ]
             ],
             [
-                'name' => 'database.manage',
-                'display_name' => '数据管理',
+                'name' => 'logs.manage',
+                'display_name' => '日志管理',
                 'route' => '',
-                'icon' => 'layui-icon-app',
+                'icon' => 'layui-icon-log',
                 'child' => [
                     [
-                        'name' => 'database.backup',
-                        'display_name' => '数据备份',
-                        'route' => 'admin.database.backup',
+                        'name' => 'logs.operation',
+                        'display_name' => '操作日志',
+                        'route' => 'admin.operation',
                         'icon' => 'layui-icon-set',
+                        'genre' => 1,
+                        'child' => []
+                    ],
+                    [
+                        'name' => 'logs.access',
+                        'display_name' => '访问日志',
+                        'route' => 'admin.access',
+                        'icon' => 'layui-icon-set',
+                        'genre' => 1,
                         'child' => [
-                            ['name' => 'database.backup.create', 'display_name' => '添加数据备份','route'=>'admin.database.backup.create'],
+                            ['name' => 'logs.access.show', 'display_name' => '查看日志', 'route'=>'admin.access.show'],
                         ]
                     ],
                     [
-                        'name' => 'database.restore',
-                        'display_name' => '数据恢复',
-                        'route' => 'admin.database.restore',
+                        'name' => 'logs.loginLog',
+                        'display_name' => '登录日志',
+                        'route' => 'admin.loginLog',
                         'icon' => 'layui-icon-set',
-                        'child' => [
-                            ['name' => 'database.restore.restore', 'display_name' => '恢复数据','route'=>'admin.database.restore.restore'],
-                            ['name' => 'database.restore.download', 'display_name' => '下载数据','route'=>'admin.database.restore.download'],
-                            ['name' => 'database.restore.destroy', 'display_name' => '删除数据','route'=>'admin.database.restore.destroy'],
-                        ]
+                        'genre' => 1,
+                        'child' => []
+                    ],
+                    [
+                        'name' => 'logs.error',
+                        'display_name' => '系统日志',
+                        'route' => 'admin.logs',
+                        'icon' => 'layui-icon-set',
+                        'genre' => 1,
+                        'child' => []
                     ],
                 ]
             ],
         ];
-
-        foreach ($permissions as $pem1) {
-            //生成一级权限
-            $p1 = \App\Models\Permission::create([
-                'name' => $pem1['name'],
-                'display_name' => $pem1['display_name'],
-                'route' => $pem1['route']?:'',
-                'icon' => $pem1['icon']?:'',
-            ]);
-            //为角色添加权限
-            $role->givePermissionTo($p1);
-            //为用户添加权限
-            $user->givePermissionTo($p1);
-            if (isset($pem1['child'])) {
-                foreach ($pem1['child'] as $pem2) {
-                    //生成二级权限
-                    $p2 = \App\Models\Permission::create([
-                        'name' => $pem2['name'],
-                        'display_name' => $pem2['display_name'],
-                        'parent_id' => $p1->id,
-                        'route' => $pem2['route']?:1,
-                        'icon' => $pem2['icon']?:'',
-                    ]);
-                    //为角色添加权限
-                    $role->givePermissionTo($p2);
-                    //为用户添加权限
-                    $user->givePermissionTo($p2);
-                    if (isset($pem2['child'])) {
-                        foreach ($pem2['child'] as $pem3) {
-                            //生成三级权限
-                            $p3 = \App\Models\Permission::create([
-                                'name' => $pem3['name'],
-                                'display_name' => $pem3['display_name'],
-                                'parent_id' => $p2->id,
-                                'route' => $pem3['route']?:'',
-                                'icon' => isset($pem3['icon'])?$pem3['icon']:'',
-                            ]);
-                            //为角色添加权限
-                            $role->givePermissionTo($p3);
-                            //为用户添加权限
-                            $user->givePermissionTo($p3);
-                        }
-                    }
-
-                }
-            }
-        }
-
-        //为用户添加角色
-        $user->assignRole($role);
-
-        //初始化的角色
-        $roles = [
-            ['name' => 'editor', 'display_name' => '编辑人员'],
-            ['name' => 'admin', 'display_name' => '管理员'],
-        ];
-        foreach ($roles as $role) {
-            \App\Models\Role::create($role);
-        }
-
-        Artisan::call('cache:clear');
-
-        echo '------------------------------'."\n";
-        echo "url: ".env('APP_URL','http://localhost')."/admin \n";
-        echo 'username: '.$setdata['username']."\n";
-        echo 'password: '.$setdata['password']."\n";
-        echo '------------------------------'."\n";
     }
+
 }

@@ -1,11 +1,6 @@
 @extends('admin.base')
 
 @section('content')
-    <style>
-        .layadmin-dataview{
-            height: 380px !important;
-        }
-    </style>
     <div class="layui-row layui-col-space15">
 
         <div class="layui-col-md8">
@@ -88,20 +83,20 @@
                                 <a href="JavaScript:;" data-icon="fa-user" data-title="修改信息" class="new_tab"><img src="{{ asset('static/admin/img/default_headimg.png') }}" alt=""></a>
                             </div>
                             <div class="welcome en-font">
-                                您好！<span>{{ auth('admin')->user()->name?:'' }}</span>
+                                您好！<span id="welcome-span">{{ $user['name'] }}</span>
                                 <a href="{{route('admin.logout')}}"><i style="color: red;" class="fa fa-sign-out" aria-hidden="true"></i></a>
                             </div>
                         </div>
                         <div class="admin_user_left">
                             <ul class="list">
-                                <li>账号：<span class="c">{{ !empty(auth('admin')->user())?auth('admin')->user()->username:'' }}</span></li>
-                                <li>地址：<span class="c">{{ (isset($loginlog['ipData'])?$loginlog['ipData']['state_name'].$loginlog['ipData']['city']:'') .' '.(isset($loginlog->ip)?'【'.$loginlog->ip.'】':'') }}</span></li>
-                                <li>时间：<span class="c">{{ !empty(auth('admin')->user())?auth('admin')->user()->created_at:'' }}</span></li>
+                                <li>账号：<span class="c">{{ $user['username'] }}</span></li>
+                                <li>地址：<span class="c">{{ $user['ip'] }}</span></li>
+                                <li>时间：<span class="c">{{ $user['created_at'] }}</span></li>
                             </ul>
                             <div class="user_link layui-btn-group">
-                                <a lay-href="{{route('admin.set.index')}}" class="layui-btn layui-btn-primary new_tab" data-icon="layui-icon-chart-screen">个人信息</a>
+                                <a lay-href="{{route('admin.basic.index')}}" class="layui-btn layui-btn-primary new_tab" data-icon="layui-icon-chart-screen">个人信息</a>
                                 @can('system.user')
-                                <a lay-href="{{route('admin.user.loginlog')}}" class="layui-btn layui-btn-primary new_tab" data-icon="layui-icon-chart-screen">登录日志</a>
+                                <a lay-href="{{route('admin.loginLog')}}" class="layui-btn layui-btn-primary new_tab" data-icon="layui-icon-chart-screen">登录日志</a>
                                 @endcan
                             </div>
                         </div>
@@ -156,39 +151,16 @@
     <script>
         //获取系统时间
         getLangDate();
-        function getLangDate() {
-            //值小于10时，在前面补0
-            function dateFilter(date) {
-                if (date < 10) { return "0" + date; }
-                return date;
-            }
-            var dateObj = new Date()
-                ,year = dateObj.getFullYear()
-                ,month = dateObj.getMonth() + 1
-                ,date = dateObj.getDate()
-                ,day = dateObj.getDay()
-                ,weeks = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
-                ,week = weeks[day]
-                ,hour = dateObj.getHours()
-                ,minute = dateObj.getMinutes()
-                ,second = dateObj.getSeconds()
-                ,timeValue = "" + ((hour >= 12) ? (hour >= 18) ? "晚上" : "下午" : "上午");
-            var newDate = dateFilter(year) + "年" + dateFilter(month) + "月" + dateFilter(date) + "日 " + " " + dateFilter(hour) + ":" + dateFilter(minute) + ":" + dateFilter(second);
-            document.getElementById("nowTime").innerHTML = "亲爱的{{ !empty(auth('admin')->user())?auth('admin')->user()->name:'' }}，" + timeValue + "好！<br/> " + newDate + "　" + week;
-            setTimeout("getLangDate()", 1000);
-        }
-        layui.use(['index', "admin", "carousel", "echarts" ,'element'],function () {
-            var g = layui.carousel,
-                e = layui.$,
+        layui.use(['index', "admin", "carousel", 'echarts', "echartsTheme" ,'element'],function () {
+            let $ = layui.$,
+                g = layui.carousel,
                 t = layui.admin,
-                i = layui.echarts,
                 s = layui.device(),
-                r = e("#LAY-index-dataview").children("div"),
-                element = layui.element,
-                l = [];
+                echarts = layui.echarts,
+                r = $("#LAY-index-dataview").children("div");
 
-            e(".layadmin-carousel").each(function () {
-                var a = e(this);
+            $(".layadmin-carousel").each(function () {
+                let a = $(this);
                 g.render({
                     elem: this,
                     width: "100%",
@@ -199,45 +171,89 @@
                     anim: a.data("anim")
                 })
             });
-            element.render("progress");
             get_line_chart();
 
             function get_line_chart() {
-                $.get("{{ route('admin.line_chart') }}",{},function (result) {
-                    if (result.code===0)
-                    {
-                        var data1 = result.data1,data2 = result.data2,series = [];
-                        for(let i in data1.names){
-                            series.push({
-                                name: data1.names[i],
-                                type: 'line',
-                                stack: '总量',
-                                areaStyle: {},
-                                data: data1.acounts[i]
-                            })
-                        }
-
-                         var n = [{title:{text:data1.charttitle},tooltip:{trigger:'axis',axisPointer:{type:'cross',label:{backgroundColor:'#6a7985'}}},legend:{data:data1.names},toolbox:{feature:{saveAsImage:{}}},grid:{left:'3%',right:'4%',bottom:'3%',containLabel:true},xAxis:[{type:'category',boundaryGap:false,data:data1.dates}],yAxis:[{type:'value'}],series:series},{title:{text:data2.charttitle,x:"center",textStyle:{fontSize:14}},tooltip:{trigger:"item",formatter:"{a} <br/>{b} : {c} ({d}%)"},legend:{orient:"vertical",x:"left",data:data2.names},series:[{name:"访问来源",type:"pie",radius:"55%",center:["50%","50%"],data:data2.datas}]}]
-                             , o = function (e) {
-                                    l[e] = i.init(r[e]), l[e].setOption(n[e]), t.resize(function () {
-                                        l[e].resize();
-                                    })
-                                };
-                        //layui.echartsTheme
-                        if (r[0]) {
-                            o(0); var d = 0;
-                            g.on("change(LAY-index-dataview)", function (e) {
-                                o(d = e.index);
-                            }), layui.admin.on("side", function () {
-                                setTimeout(function () {
-                                    o(d);
-                                }, 300);
-                            }), layui.admin.on("hash(tab)", function () {
-                                layui.router().path.join("") || o(d);
-                            });
-                        }
+                $.get("{{route('admin.line_chart')}}", {}, function (result) {
+                    if (result.code === 0) {
+                        setData(result.data);
                     }
                 });
+            }
+
+            function setData(data) {
+                let l = []
+                    , n = [{
+                    title: { text: data.platform.title },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'cross',
+                            label: { backgroundColor: '#6a7985' }
+                        }
+                    },
+                    legend: { data: ['PV', 'UV'] },
+                    toolbox: {
+                        feature: { saveAsImage: {} }
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: [{
+                        type: 'category',
+                        boundaryGap: false,
+                        data: data.platform.keys
+                    }],
+                    yAxis: [{ type: 'value' }],
+                    series: [
+                        {
+                            name: 'PV',
+                            type: 'line',
+                            stack: '总量',
+                            areaStyle: {},
+                            data: data.platform.pv
+                        },
+                        {
+                            name: 'UV',
+                            type: 'line',
+                            stack: '总量',
+                            areaStyle: {},
+                            data: data.platform.uv
+                        }
+                    ]
+                },
+                    {
+                        title: {
+                            text: data.browser.title,
+                            x: "center",
+                            textStyle: { fontSize: 14 }
+                        },
+                        tooltip: {
+                            trigger: "item",
+                            formatter: "{a} <br/>{b} : {c} ({d}%)"
+                        },
+                        legend: {
+                            orient: "vertical",
+                            x: "left",
+                            data: data.browser.keys
+                        },
+                        series: [{
+                            name: "访问来源",
+                            type: "pie",
+                            radius: "55%",
+                            center: ["50%", "50%"],
+                            data: data.browser.data
+                        }]
+                    }]
+                    , o = function (e) {l[e] = echarts.init(r[e], layui.echartsTheme);l[e].setOption(n[e]);t.resize(function () { l[e].resize(); });};
+
+                if (r[0]) {
+                    let d = 0;o(0);
+                    g.on("change(LAY-index-dataview)", function (e) { o(d = e.index); }); t.on("side", function () {  setTimeout(function () { o(d); }, 300);  });t.on("hash(tab)", function () { layui.router().path.join("") || o(d); });
+                }
             }
 
         });

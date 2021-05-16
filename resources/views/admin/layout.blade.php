@@ -8,7 +8,7 @@
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <link rel="shortcut icon" type="image/x-icon" href="{{ isset($website['icon'])?$website['icon']: asset('favicon.ico') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{asset('favicon-32x32.png')}}">
     <link rel="stylesheet" href="{{ asset('static/common/layui/css/layui.css') }}" media="all">
     <link rel="stylesheet" href="{{ asset('static/common/style/admin.css') }}" media="all">
     <link rel="stylesheet" href="{{ asset('static/admin/css/style.css') }}" media="all">
@@ -36,13 +36,13 @@
                     </a>
                 </li>
                 <li class="layui-nav-item layui-hide-xs" lay-unselect>
-                    <input type="text" placeholder="搜索..." autocomplete="off" class="layui-input layui-input-search" layadmin-event="serach" lay-action="{{route('admin.search',['keywords'=>''])}}">
+                    <input type="text" placeholder="搜索..." autocomplete="off" class="layui-input layui-input-search" layadmin-event="serach" lay-action="https://www.baidu.com/s?wd=">
                 </li>
             </ul>
             <ul class="layui-nav layui-layout-right" lay-filter="layadmin-layout-right">
 
                 <li class="layui-nav-item layui-hide-xs" lay-unselect>
-                    <a href="javascript:;" lay-href="{{ route('admin.datecache') }}" layadmin-event="cache"  lay-text="清除缓存">
+                    <a href="javascript:;" lay-href="{{ route('admin.dateCache') }}" layadmin-event="cache"  lay-text="清除缓存">
                         <i class="layui-icon layui-icon-delete"></i>
                     </a>
                 </li>
@@ -61,8 +61,8 @@
                         <cite>{{auth('admin')->user()->name}}</cite>
                     </a>
                     <dl class="layui-nav-child">
-                        <dd><a lay-href="{{route('admin.set.index')}}">基本资料</a></dd>
-                        <dd><a lay-href="{{route('admin.set.password')}}">修改密码</a></dd>
+                        <dd><a lay-href="{{route('admin.basic.index')}}">基本资料</a></dd>
+                        <dd><a lay-href="{{route('admin.basic.password')}}">修改密码</a></dd>
                         <hr>
                         <dd  style="text-align: center;"><a href="{{route('admin.logout')}}">退出</a></dd>
                     </dl>
@@ -97,18 +97,18 @@
                         </dl>
                     </li>
                     @foreach($menus as $menu)
-                        @can($menu->name)
-                            <li data-name="{{$menu->name}}" class="layui-nav-item">
-                                <a href="javascript:;" lay-tips="{{$menu->display_name}}" lay-direction="2">
-                                    <i class="layui-icon {{$menu->icon?:''}}"></i>
-                                    <cite>{{$menu->display_name}}</cite>
+                        @can($menu['name'])
+                            <li data-name="{{$menu['name']}}" class="layui-nav-item">
+                                <a href="javascript:;" lay-tips="{{$menu['display_name']}}" lay-direction="2">
+                                    <i class="layui-icon {{$menu['icon'] ?? ''}}"></i>
+                                    <cite>{{$menu['display_name']}}</cite>
                                 </a>
-                                @if($menu->childs->isNotEmpty())
+                                @if(!empty($menu['childs']))
                                     <dl class="layui-nav-child">
-                                        @foreach($menu->childs as $subMenu)
-                                            @can($subMenu->name)
-                                                <dd data-name="{{$subMenu->name}}" >
-                                                    <a lay-href="{{ route($subMenu->route) }}">{{$subMenu->display_name}}</a>
+                                        @foreach($menu['childs'] as $subMenu)
+                                            @can($subMenu['name'])
+                                                <dd data-name="{{$subMenu['name']}}" >
+                                                    <a  lay-href="{{route($subMenu['route'])}}">{{$subMenu['display_name']}}</a>
                                                 </dd>
                                             @endcan
                                         @endforeach

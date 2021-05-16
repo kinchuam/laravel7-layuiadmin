@@ -20,7 +20,7 @@
                 <input type="checkbox" name="remember" value="1" lay-skin="primary" title="记住密码" checked>
             </div>
             <div class="layui-form-item">
-                <button type="submit" class="layui-btn layui-btn-fluid" lay-submit lay-filter="formDemo">登 入</button>
+                <button type="button" class="layui-btn layui-btn-fluid submit" lay-submit lay-filter="formDemo"><i class="layui-icon layui-icon-release"></i> 登 入</button>
             </div>
         </form>
     </div>

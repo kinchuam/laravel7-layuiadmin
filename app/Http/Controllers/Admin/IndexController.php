@@ -3,43 +3,28 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\AccessLog;
-use App\Models\User;
+use App\Models\LoginLog;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class IndexController extends Controller
 {
-    /**
-     * 后台布局
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
+
     public function layout()
     {
         return view('admin.layout');
     }
 
-    private function mysqlversion()
-    {
-        $mysqlv = DB::select('SELECT VERSION() as VERSION;');
-        return $mysqlv[0]->VERSION;
-    }
-
-    /**
-     * 后台首页
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function index(Request $request)
+    public function index()
     {
         $data = [
             'shortcut' => [
                 [
-                    ['title'=>'附件','url'=>route('admin.files'),'icon'=>'layui-icon-file'],
-                    ['title'=>'设置','url'=>route('admin.site'),'icon'=>'layui-icon-set'],
-                    ['title'=>'管理员', 'url'=>route('admin.user'), 'icon'=>'layui-icon-user'],
-                    ['title'=>'日志管理', 'url'=>route('admin.operation'), 'icon'=>'layui-icon-log'],
+                    ['title' => '管理员', 'url' => route('admin.user'), 'icon' => 'layui-icon-user'],
+                    ['title' => '角色管理', 'url' => route('admin.role'), 'icon' => 'layui-icon-group'],
+                    ['title' =>'日志管理', 'url' => route('admin.operation'), 'icon' => 'layui-icon-log'],
+                    ['title' => '上传设置', 'url' => route('admin.attachment'), 'icon' => 'layui-icon-set-fill'],
                 ],
             ],
 
@@ -47,168 +32,113 @@ class IndexController extends Controller
                 [
                     ['title'=>'日志 ', 'url'=>'', 'count'=> AccessLog::query()->count()],
                 ],
-                [
-                    ['title'=>'管理员 ', 'url'=>'', 'count'=> User::query()->count()],
-                ],
             ],
 
             'widget_config' => [
                 ['Laravel', 'Web', '操作系统'],
                 [app()->version(), request()->server('SERVER_SOFTWARE'), PHP_OS ],
                 ['上传限制', 'PHP', 'Mysql'],
-                [ini_get('upload_max_filesize'), phpversion(), $this->mysqlversion()],
+                [ini_get('upload_max_filesize'), phpversion(), $this->mysqlVersion()],
                 ['GD', 'PDO', 'CURL'],
                 [extension_loaded('gd') ? 'YES' : 'NO', class_exists('pdo')?'YES':'NO', extension_loaded('curl') ? 'YES' : 'NO'],
             ]
         ];
 
-        $loginlog = [];
-        if (auth('admin')->user()) {
-            $uuid = auth('admin')->user()->uuid;
-            $loginlog = User\LoginLog::where('uuid', trim($uuid))->orderBy('id','desc')->first(['ip','ipData','created_at']);
-            $loginlog['ipData'] = json_decode($loginlog['ipData'],true);
+        $user = [];
+        if (auth('admin')->check()) {
+            $user = auth('admin')->user();
+            if (!empty($user->username)) {
+                $loginLog = LoginLog::where('username', $user->username)->orderBy('id', 'desc')->first(['ip','ip_data']);
+                $user['ip'] = $loginLog['ip'] ?? '127.0.0.1';
+                if (!empty($loginLog['ip_data'])) {
+                    if ($ip_data = json_decode($loginLog['ip_data'], true)) {
+                        $user['ip'] = $loginLog['ip'].' '.trim($ip_data['region']);
+                    }
+                }
+            }
         }
 
-        return view('admin.index.index', compact('data','loginlog'));
+        return view('admin.index.index', compact('data','user'));
     }
 
-    public function search(Request $request)
+    private function mysqlVersion()
     {
-        if ($request->ajax()) {
-            $get = $request->only(['keywords']);
-            $list = [];
-            return response()->json([
-                'code' => 0,
-                'msg' => '请求成功',
-                'data' => $list,
-            ]);
-        }
-        return view('admin.index.sreach');
+        $sql = DB::select('SELECT VERSION() as VERSION;');
+        return $sql[0]->VERSION;
     }
 
-    public function line_chart(Request $request)
+    public function line_chart(): \Illuminate\Http\JsonResponse
     {
-        $data1 = $this->Get_platform_count();
-        $data2 = $this->Get_browser_count();
-
         return response()->json([
             'code' => 0,
-            'msg' => '请求成功',
-            'data1' => $data1,
-            'data2' => $data2,
+            'message' => '请求成功',
+            'data' => [
+                'platform' => $this->Get_platform(),
+                'browser' => $this->Get_browser(),
+            ],
         ]);
     }
 
-    public function Get_platform_count($limit=5)
+    public function Get_platform($day = 6): array
     {
-        $weekarray = ['周日','周一','周二','周三','周四','周五','周六'];
+        $start = Carbon::now()->subDays($day);
+        $end  = Carbon::today();
+        $pvs = AccessLog::query()->whereBetween('created_at',  [$start, $end])->select(DB::raw('SQL_CACHE DATE_FORMAT(`created_at`, "%Y-%m-%d") as date_t, COUNT(*) as total'))
+            ->groupBy(['date_t'])->get()->toArray();
 
-        $list  = AccessLog::whereBetween('created_at',[Carbon::today()->subDays(count($weekarray)), Carbon::now()])
-            ->select('platform', DB::raw('DATE(created_at) as f_date'))->get()->toArray();
+        $subQuery = AccessLog::query()->whereBetween('created_at',  [$start, $end])->select(DB::raw('DATE_FORMAT(`created_at`, "%Y-%m-%d") as date_t, COUNT(*) as total'))
+            ->groupBy(['date_t','ip']);
+        $uvs = DB::table(DB::raw("({$subQuery->toSql()}) as sub"))->mergeBindings($subQuery->getQuery())
+            ->select(DB::raw('SQL_CACHE date_t , COUNT(*) as total'))->groupBy('date_t')->get()->toArray();
 
-        $dates = [];$names = [];$new_arr = [];
-        if (!empty($list)) {
-            $arr = [];
-            foreach ($list as $row) {
+        $i = 7;$transaction = [];
+        while (1 <= $i) {
+            $key = date('Y-m-d', time() - $i * 3600 * 24);
+            $transaction['pv'][$key] = 0;
+            $transaction['uv'][$key] = 0;
+            --$i;
+        }
 
-                $platform = $row['platform'] = empty($row['platform'])?'其他':$row['platform'];
-                $f_date = $row['f_date'];
-                $i = count($weekarray)-1;
-
-                while (0 <= $i) {
-                    $date = date('Y-m-d', strtotime('-' . $i . ' day'));
-                    $dates[$i] = $date;
-                    $count = $arr[$platform][$i]??0;
-
-                    if ($date == $f_date) {
-                        $count++;
-                    }
-
-                    $arr[$platform][$i] = $count;
-                    --$i;
-                }
+        if (!empty($pvs)) {
+            foreach ($pvs as $k => $v) {
+                $transaction['pv'][$v['date_t']] = $v['total'];
             }
-
-            $arr = array_slice($arr, 0 , $limit);
-            foreach ($arr as $key => $row) {
-                $names[] = $key;
-                $new_arr[] = Arr::flatten($row);
+        }
+        if (!empty($uvs)) {
+            foreach ($uvs as $k => $v) {
+                $transaction['uv'][$v->date_t] = $v->total;
             }
-            $dates = Arr::flatten($dates);
         }
 
         return [
-            'charttitle' => '操作系统统计图',
-            'names' => $names,
-            'dates' => $dates,
-            'acounts' => $new_arr
+            'title' => '访问量统计',
+            'keys' => array_keys($transaction['pv']),
+            'pv' => array_values($transaction['pv']),
+            'uv' => array_values($transaction['uv'])
         ];
     }
 
-    public function Get_browser_count($limit = 5)
+    public function Get_browser($limit = 5): array
     {
-        $names = [];$datas = [];
-        $list  =  AccessLog::select('browser',DB::raw('COUNT(id) as count'))->groupBy('browser')->take($limit)->get()->toArray();
+        $keys = [];$data = [];
+        $list = AccessLog::query()->select('browser', DB::raw('COUNT(`id`) as count'))
+            ->groupBy(['browser'])->take($limit)->get()->toArray();
 
         if (!empty($list)) {
             foreach ($list as $row) {
-                $browser = empty($row['browser'])?'其他':$row['browser'];
-                $names[] = $browser;
-                $datas[] = [
+                $browser = empty($row['browser'])?'Other':$row['browser'];
+                $keys[] = $browser;
+                $data[] = [
                     'name' => $browser,
                     'value' => $row['count']
                 ];
             }
         }
-
         return [
-            'charttitle' => '各浏览器分布图',
-            'names' => $names,
-            'datas' => $datas
+            'title' => '浏览器分布图',
+            'keys' => $keys,
+            'data' => $data
         ];
-    }
-
-
-    /**
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     * 数据表格接口
-     */
-    public function data(Request $request)
-    {
-        $model = $request->get('model');
-        switch (strtolower($model)) {
-            case 'user':
-                $query = User::query()->select(['id','username','name','phone','email','created_at','updated_at']);
-                break;
-            case 'role':
-                $query = \App\Models\Role::query()->select(['id','name','display_name','created_at','updated_at']);
-                break;
-            case 'permission':
-                $query = \App\Models\Permission::query();
-                break;
-            default:
-                $query = User::query()->select(['id','username','name','phone','email','created_at','updated_at']);
-                break;
-        }
-
-        if (strtolower($model) == 'permission') {
-            $res = $query->get(['id','name','display_name','route','icon','parent_id','created_at','updated_at'])->toArray();
-            $data = [
-                'code' => 0,
-                'msg' => '正在请求中...',
-                'data' => $res
-            ];
-        }else{
-            $res = $query->paginate($request->get('limit', 20))->toArray();
-            $data = [
-                'code' => 0,
-                'msg' => '正在请求中...',
-                'count' => $res['total'],
-                'data' => $res['data']
-            ];
-        }
-        return response()->json($data);
     }
 
 }

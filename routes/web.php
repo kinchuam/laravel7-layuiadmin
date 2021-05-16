@@ -13,9 +13,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', 'HomeController@index')->name('home.index');
-
-Route::get('/images/{file}', 'DocumentController@get_images_url')->name('images.get_url');
-Route::get('/file/{file}', 'DocumentController@get_file_url')->name('file.get_url');
+Route::get('/', 'IndexController@index')->middleware(['operation'])->name('home.index');
 
 

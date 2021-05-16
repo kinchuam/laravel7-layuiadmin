@@ -1,22 +1,17 @@
 @extends('admin.base')
 
 @section('content')
-    <style>
-        .opTable-open-item-div{
-            margin-right: 20px;
-        }
-    </style>
     <div class="layui-card">
-        <div class="layui-form  layui-card-header layuiadmin-card-header-auto" lay-filter="layadmin-userfront-formlist">
+        <div class="layui-form layui-card-body">
             <div class="layui-form-item">
 
                 <div class="layui-inline">
                     <div class="layui-input-inline">
-                        <select name="method" >
-                            <option value="">用户</option>
-                            @if(isset($users))
+                        <select name="causer_id" >
+                            <option value="">管理员</option>
+                            @if(!empty($users))
                                 @foreach($users as $user)
-                                    <option value="{{$user->id}}">{{$user->name}}</option>
+                                    <option value="{{ $user['id'] }}">{{ $user['name'] }}</option>
                                 @endforeach
                             @endif
                         </select>
@@ -38,34 +33,35 @@
 @endsection
 
 @section('script')
-    @can('logs.operation')
-        <script>
-            layui.use(['table','form'],function () {
-                var table = layui.table,form = layui.form;
+    <script>
+        layui.use(['opTable','form'],function () {
+            let form = layui.form
+                , opTable = layui.opTable
+                , dataTable = opTable.render({
+                elem: '#dataTable'
+                ,url: "{{ route('admin.operation.data') }}"
+                ,page: true
+                ,cols: [[
+                    {field: 'username', title: '管理员', width: 180, templet: function (d) { return (d.user?d.user.name:'未知'); }}
+                    ,{field: 'description', title: '描述'}
+                    ,{field: 'subject_type',title: '模型', width: 180}
+                    ,{field: 'created_at', title: '创建时间', width: 190}
+                ]]
+                ,openCols: [
+                    {field: 'properties', title: '数据', templet: function (it) {
+                            if (!it.properties) {  return "无数据"  }
+                            return "<pre class='layui-code'>" + JSON.stringify(JSON.parse(it.properties), null, 2) + "</pre>";
+                        }}
+                ]
+            });
 
-                var dataTable = table.render({
-                    elem: '#dataTable'
-                    ,url: "{{ route('admin.operation.data') }}"
-                    ,page: true
-                    ,cols: [[
-                        {field: 'username', title: '用户', templet: function (d) {
-                                return (d.user?d.user.name:'未知用户');
-                            }}
-                        ,{field: 'log_name', title: '位置'}
-                        ,{field: 'description', title: '描述'}
-                        ,{field: 'subject_type',title:'操作模型'}
-                        ,{field: 'created_at', title: '创建时间'}
-                    ]]
-                });
-
-                //搜索
-                form.on('submit(searchBtn)', function(data){
-                    dataTable.reload({
-                        where:data.field,
-                        page:{curr:1}
-                    })
-                });
-            })
-        </script>
-    @endcan
+            //搜索
+            form.on('submit(searchBtn)', function(data){
+                dataTable.reload({
+                    where:data.field,
+                    page:{curr:1}
+                })
+            });
+        });
+    </script>
 @endsection

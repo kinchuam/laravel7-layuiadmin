@@ -15,19 +15,17 @@ class CreateAttachmentTable extends Migration
     {
         Schema::create('attachment', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('uuid',200)->default(0);
-            $table->string('filename',150)->comment('附件名');
-            $table->string('path',150)->comment('路径');
-            $table->string('suffix',20)->comment('附件的后缀');
-            $table->string('type',100);
-            $table->string('storage',50)->nullable();
-            $table->string('file_url',120)->nullable();
+            $table->uuid('uuid')->default('');
+            $table->string('filename',150)->default('')->index();
+            $table->string('path',200)->default('');
+            $table->string('suffix',20)->default('');
+            $table->string('type',100)->default('');
+            $table->string('storage',50)->default('');
+            $table->string('file_url',200)->default('');
             $table->integer('size')->default(0);
-            $table->integer('group_id')->default(0)->comment('分类id');
+            $table->integer('group_id')->default(0)->index();
             $table->softDeletes();
             $table->timestamps();
-            $table->index('filename');
-            $table->index('group_id');
         });
     }
 

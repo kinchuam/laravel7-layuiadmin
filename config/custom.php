@@ -1,14 +1,11 @@
 <?php
 return [
+    'article_tier' => env('ARTICLE_TIER', 2),
+
+    'config_cache_time' => env('CONFIG_CACHE_TIME', 120),
+
     'operation_log' => [
         'enable' => true,
         'except' => [],
     ],
-
-    'DatabaseBackup' => [
-        'path' => storage_path('app/database/'),
-        'part' => 20971520,
-        'compress' => 1, //1:启用压缩 , 0:不启用
-        'level' => 9, //1:普通 , 4:一般 , 9:最高
-    ]
 ];

@@ -15,17 +15,16 @@ class CreateAccesslogTable extends Migration
     {
         Schema::create('access_log', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('path',120);
+            $table->string('path',120)->index();
             $table->string('method', 10);
             $table->mediumText('input');
             $table->tinyInteger('type')->default(0);
-            $table->string('ip',120);
-            $table->string('platform',100)->comment('系统')->nullable();
-            $table->string('browser',100)->comment('浏览器')->nullable();
-            $table->text('agent')->comment('user_agent');
-            $table->mediumText('ipData');
+            $table->ipAddress('ip')->default('')->index();
+            $table->string('platform',100)->default('')->index();
+            $table->string('browser',100)->default('')->index();
+            $table->string('ip_data', 800)->default('');
+            $table->mediumText('agent');
             $table->timestamps();
-            $table->index(['path','ip','platform','browser'], 'access_log_index');
         });
     }
 

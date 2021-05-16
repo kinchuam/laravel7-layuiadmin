@@ -15,10 +15,9 @@ class CreateSitesTable extends Migration
     {
         Schema::create('sites', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('key');
-            $table->text('value');
+            $table->string('key', 150)->unique();
+            $table->mediumText('value');
             $table->timestamps();
-            $table->unique('key');
         });
     }
 

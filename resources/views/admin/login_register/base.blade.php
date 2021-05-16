@@ -6,6 +6,7 @@
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="shortcut icon" type="image/x-icon" href="{{asset('favicon-32x32.png')}}">
     <link rel="stylesheet" href="{{ asset('static/common/layui/css/layui.css') }}" media="all">
     <link rel="stylesheet" href="{{ asset('static/common/style/admin.css') }}" media="all">
     <link rel="stylesheet" href="{{ asset('static/common/style/login.css') }}" media="all">
@@ -27,17 +28,22 @@
     </div>
 </div>
 
-<script src="//cdn.bootcdn.net/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
 <script src="{{ asset('static/common/layui/layui.js') }}"></script>
+<script src="{{asset('static/admin/js/app.js')}}"></script>
 <script>
 
     layui.config({
         base: "{{ asset('static/common/') }}/" //静态资源所在路径
     }).extend({
         sliderVerify: 'plugins/sliderVerify/sliderVerify'
-    }).use(['layer','sliderVerify','form'],function () {
-        var layer = layui.layer,form = layui.form,sliderVerify = layui.sliderVerify;
-        var slider = sliderVerify.render({
+    }).use(['layer', 'sliderVerify', 'form'],function () {
+        let $ = layui.$
+            , layer = layui.layer
+            , form = layui.form
+            , sliderVerify = layui.sliderVerify
+            , condition = false;
+
+        let slider = sliderVerify.render({
             elem: '#slider',
             onOk: function(){
                 layer.msg("滑块验证通过");
@@ -45,22 +51,32 @@
         });
         //监听提交
         form.on('submit(formDemo)', function(data) {
+            let field = data.field;
+            if (condition) { return false;}
             if(!slider.isOk()){
                 layer.msg("请先通过滑块验证"); return false;
             }
+            condition = true;
+            field.username = window.btoa(field.username);
+            field.password = window.btoa(field.password);
+            layer.msg('正在处理请求...', { icon: 16, shade: 0.01, time:false });
+            $.post(location.href, field, function (result) {
+                condition = false;
+                layer.msg('登录成功', {time: 2000, icon: 6})
+                window.location.replace(result.url);
+            });
         });
-        //表单提示信息
-        @if(count($errors)>0)
-        @foreach($errors->all() as $error)
-        layer.msg("{{$error}}",{icon:5});
-        @break
-        @endforeach
-        @endif
 
-        //正确提示
-        @if(session('success'))
-        layer.msg("{{session('success')}}",{icon:6});
-        @endif
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                condition = false;
+                slider.reset();
+                layer.msg(get_responseText(XMLHttpRequest), {time: 3000, icon: 5});
+            }
+        });
 
     })
 </script>

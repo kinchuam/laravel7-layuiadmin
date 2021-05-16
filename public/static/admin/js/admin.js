@@ -1,11 +1,11 @@
 ;!function (win) {
 
-    var active = function () {};
+    let active = function () {};
 
     active.prototype.openLayerForm = function (url = '', title = '信息', data={} ,formId = "#layer-form") {
-        var defaults = {full:false,btn:true,width:'55%',height:'65%'};
+        let defaults = {full:false,btn:true,width:'55%',height:'65%'};
         data = $.extend({}, defaults, data);
-        var d = {
+        let d = {
             type: 2
             ,title: title
             ,anim: 2
@@ -16,18 +16,17 @@
         if (data.btn){
             d.btn =  ['确认', '取消'];
             d.yes =  function (index, layero) {
-                var submit = layero.find('iframe').contents().find("#formDemo");
+                let submit = layero.find('iframe').contents().find("#formDemo");
                 submit.click();
             };
         }
-        var index = layer.open(d);
+        let index = layer.open(d);
         if (data.full){
             layer.full(index);
         }
     };
 
-    active.prototype.multi_image = function (that,url)
-    {
+    active.prototype.multi_image = function (that,url) {
         parent.layer.open({
             type: 2
             , title: '图片库'
@@ -41,16 +40,16 @@
             , scrollbar: false
             , content: url
             , yes: function (index,layero) {
-                var iframeWindow = (layero).find("iframe")[0].contentWindow
+                let iframeWindow = (layero).find("iframe")[0].contentWindow
                     ,nopic = $(that).data('nopic');
-                var data = iframeWindow.getdata()
+                let data = iframeWindow.getdata()
                     ,multiple = $(that).data('multiple') || false
                     ,limit = $(that).data('limit')
                     ,$imagesList = $(that).next('.input-group').find('.layui-upload-box')
                     ,default_pic = $(that).data('default_pic')
                     ,html = '';
                 // 新增图片列表
-                var list = multiple ? data : [data[0]];
+                let list = multiple ? data : [data[0]];
                 for (i in list) {
                     html += '<li> ' +
                         '<img src="'+list[i].file_url+'" onerror="this.src=\''+nopic+'\'" alt="'+list[i].file_path+'">' +
@@ -83,9 +82,8 @@
         });
     };
 
-    active.prototype.del_image = function (that)
-    {
-        var default_pic = $(that).data('default_pic');
+    active.prototype.del_image = function (that) {
+        let default_pic = $(that).data('default_pic');
         $(that).prev().attr("src", default_pic);
         $(that).parents('.layui-upload').find("input").val("");
     };

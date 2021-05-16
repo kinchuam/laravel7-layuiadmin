@@ -2,14 +2,19 @@
  @ Name：layui 表格冗余列可展开显示
  @ Author：hbm
  @ License：MIT
- @ version 1.3
+ @ version 1.4
  */
 
 layui.define(['form', 'table'], function (exports) {
+  //加载组件所需样式
+  layui.link(layui.cache.base + '/opTable/opTable.css', function () {
+  }, 'opTable');
+  // 加载列配置可拖动
+  layui.$("body").append('<script type="text/javascript" src="' + layui.cache.base + '/opTable/Sortable.min.js" charset="utf-8"></script>');
+
   var $ = layui.$
       , table = layui.table
-      , form = layui.form
-      , VERSION = 1.3, MOD_NAME = 'opTable'
+      , VERSION = 1.4, MOD_NAME = 'opTable'
       // 展开 , 关闭
       , ON = 'on', OFF = 'off', KEY_STATUS = "status"
       // openType 0、默认效果同时只展开一项  1、点击展开多项 2、 展开全部  3、关闭全部
@@ -25,14 +30,31 @@ layui.define(['form', 'table'], function (exports) {
           that.config = $.extend({}, that.config, options);
           return that;
         }
-
-        // 事件监听
-        //, on: function (events, callback) {
-        //  return layui.onevent.call(this, MOD_NAME, events, callback);
-        //}
       }
       // 展开列需要需要显示的数据 数据格式为 每个页面唯一的（LAY_IINDEX）下标绑定数据  对应的数据
       , openItemData = {}
+      // 表格配置项，通过表格唯一ID绑定配置详情 。
+      , openTitleHelpOption = {}
+      // 通过ID绑定子表实例
+      , childTableObj = {}
+      // 解决字表修改触发父级表格修改的问题
+      , isEditListener = true
+      // 持久化保存 列排序
+      , opCache = {
+        key: MOD_NAME,
+        getVal: function (key, def) {
+          return layui.data(this.key)[key] || def
+        },
+        setVal: function (key, val) {
+          layui.data(this.key, {
+            key: key
+            , value: val
+          });
+        },
+        getTableKeyId: function (tableId) {
+          return window.location.pathname + tableId;
+        }
+      }
       , getOpenClickClass = function (elem, isAddClickClass) {
         return elem.replace("#", '').replace(".", '') + (isAddClickClass ? 'opTable-i-table-open' : '')
       }
@@ -46,8 +68,7 @@ layui.define(['form', 'table'], function (exports) {
       // 操作当前实例
       , thisIns = function () {
         var that = this
-            , options = that.config
-            , id = options.id || options.index;
+            , options = that.config;
         return {
           /**
            * 重载  penTable
@@ -55,40 +76,35 @@ layui.define(['form', 'table'], function (exports) {
            * @returns {thisIns}
            */
           reload: function (options) {
-            var defIsAloneColumn = that.config.isAloneColumn && that.config.openVisible
-                , defOpenColumnIndex = that.config.openColumnIndex
-                , colArr = that.config.cols[0];
+            options = options || {};
+            that.config = $.extend(that.config, options);
+            options.page = options.page === false ? false : options.page || {};
 
-            options = $.extend(that.config, options);
-            that.config = options;
-
-            // 下标越界问题
-            options.openColumnIndex = options.openColumnIndex > colArr.length ? colArr.length : options.openColumnIndex;
-            // 单独显示列 移除第一次创建的列
-            if (defIsAloneColumn) {
-              colArr.splice(defOpenColumnIndex, 1)
-            } else if (defOpenColumnIndex !== that.config.openColumnIndex) {
-              // 不在原列显示 需要移除
-              var openColumn = colArr[defOpenColumnIndex];
-              openColumn.title = openColumn.opDefTitle;
-              openColumn.templet = openColumn.opDefTem;
+            // 一、本次重载不能为关闭分页的状态
+            if (options.page) {
+              that.config.page = {};
+              // 2、获取到刷新前的分页属性
+              var his = that.config.table.config.page || {};
+              // 3、设置 起始页
+              that.config.page.curr = options.page.curr || his.curr;
             }
 
-            // 记录页码
-            that.config.page.limit = that.config.table.config.page.limit;
-            that.config.page.curr = that.config.table.config.page.curr;
+            //  二、本次未设置条数
+            if (!options.limit) {
+              // 设置为刷新前的总条数
+              that.config.limit = that.config.table.config.limit
+            }
+
             that.render();
             return this;
           }
           , config: options
-
           // 展开全部
-          , openAll: function () {
-            // 表格 同时只支持展开一项
-            if (that.config.openTable || this.isOpenAll()) {
+          , openAll: function (result) {
+            if (this.isOpenAll()) {
+              result && result();
               return this;
             }
-
             var def = that.config.openType;
             that.config.openType = OPEN_ALL;
             $("." + getOpenClickClass(that.config.elem, true)).parent().click();
@@ -100,6 +116,7 @@ layui.define(['form', 'table'], function (exports) {
                 .attr(KEY_STATUS, ON);
 
             that.config.onOpenAll && that.config.onOpenAll();
+            result && result();
             return this;
           }
           // 关闭全部
@@ -184,6 +201,8 @@ layui.define(['form', 'table'], function (exports) {
   Class.prototype.config = {
     // 是否显示展开 默认显示
     openVisible: true
+    // 是否支持展开全部
+    , isOpenAllClick: true
     , openType: OPEN_DEF
     // 展开的item (垂直v|水平h) 排序
     , opOrientation: 'v'
@@ -191,12 +210,10 @@ layui.define(['form', 'table'], function (exports) {
     , openColumnIndex: 0
     // 是否单独占一列 v1.2
     , isAloneColumn: true
-    // 展开图标 {"-1":'展开全部',0:'所有item下标',1:'' ,... 配置指定下标}
+    // 展开图标 {"-1":'展开全部',0:'所有item下标',1:'' ,... 配置指定下标 }
     , openIcon: {}
     // layui table引用
     , table: null
-    // 子table引用
-    , childTable: null
     // 展开动画执行时长
     , slideDownTime: 200
     // 关闭动画执行时长
@@ -210,18 +227,36 @@ layui.define(['form', 'table'], function (exports) {
         , colArr = options.cols[0]
         , openCols = options.openCols || []
         , openNetwork = options.openNetwork || null
-        , openTable = options.openTable || null;
-
-
-    // 展开显示表格 同时只支持展开一个
-    options.openType = openTable ? OPEN_DEF : options.openType;
+        , openTable = options.openTable || null
+        , allBySort = []
+        , colsBySort = []
+        , openColsBySort = [];
     options.layuiDone = options.done || options.layuiDone;
+    var singleElem = options.elem.replace("#", '').replace(".", '')
 
+    colArr.forEach(function (it, i) {
+      // 当前列属于图标列
+      if (it.isOpenCol) {
+        // 独占一行 移除行
+        if (options.isAloneColumn) {
+          colArr.splice(i, 1);
+        } else {
+          // 移除合并图标
+          it.title = it.opDefTitle || it.title;
+        }
+      }
+      if (it.opHelp) {
+        it.title = it.title.indexOf('opTable-span-help') === -1
+            ? it.title + '<span class="opTable-span-help" single="' + singleElem + it.field + '"></span>'
+            : it.title;
+        openTitleHelpOption[singleElem + it.field] = it.opHelp;
+      }
+    });
     // 下标越界问题
     options.openColumnIndex = options.openColumnIndex > colArr.length ? colArr.length : options.openColumnIndex;
     delete options["done"];
 
-    // 图标
+    //  表头 展开全部 图标
     var allIcon = function () {
       // 全部图标
       var icon = options.openIcon[ICON_DEF_ALL_KEY];
@@ -251,12 +286,12 @@ layui.define(['form', 'table'], function (exports) {
       if (options.isAloneColumn) {
         //  1、在指定列 插入可展开操作
         colArr.splice(options.openColumnIndex, 0, {
-          align: 'left',
           width: 50,
-          title: getOpenAllIcon(openTable, options.elem, allIcon()),
+          isOpenCol: true,
+          title: getOpenAllIcon(!options.isOpenAllClick, options.elem, allIcon()),
           templet: function (item) {
-            // 解决页面多个表格问题
             var cla = getOpenClickClass(options.elem, false);
+            // 解决页面多个表格问题
             openItemData[cla] = openItemData[cla] || {};
             openItemData[cla][item.LAY_INDEX] = item;
             return "<i class='opTable-i-table-open " + cla + "opTable-i-table-open' " + KEY_STATUS + "='off'  data='"
@@ -264,7 +299,7 @@ layui.define(['form', 'table'], function (exports) {
                 + item.LAY_INDEX
                 + " ' elem='"
                 + cla
-                + "' title='展开' " + indexByIcon(item.LAY_INDEX) + "></i>";
+                + "' title='展开' " + (indexByIcon()()) + "></i>";
           }
         });
       } else {
@@ -272,11 +307,10 @@ layui.define(['form', 'table'], function (exports) {
         var openColumn = colArr[options.openColumnIndex];
         delete openColumn["edit"];
         openColumn.opDefTitle = openColumn.title;
-        // 展开显示表格||存在排序 都不支持展开全部
-        openColumn.title = getOpenAllIcon(openTable || openColumn["sort"], options.elem, allIcon()) + ("<span class='opTable-span-seize'></span>") + openColumn.title;
-        openColumn.opDefTem = openColumn.templet;
+        openColumn.isOpenCol = true;
+        // 存在排序 都不支持展开全部
+        openColumn.title = getOpenAllIcon(openColumn["sort"], options.elem, allIcon()) + ("<span class='opTable-span-seize'></span>") + openColumn.title;
         openColumn.templet = function (item) {
-          // 解决页面多个表格问题
           var cla = getOpenClickClass(options.elem, false);
           openItemData[cla] = openItemData[cla] || {};
           openItemData[cla][item.LAY_INDEX] = item;
@@ -288,11 +322,76 @@ layui.define(['form', 'table'], function (exports) {
               + "' title='展开' "
               + indexByIcon(item.LAY_INDEX) + "></i>")
               + ("<span class='opTable-span-seize'></span>")
-              + (openColumn.opDefTem ? openColumn.opDefTem(item) : item[openColumn.field]);
+              + (openColumn.onDraw ? openColumn.onDraw(item) : item[openColumn.field]);
         };
       }
     }
 
+    // 处理列排序持久化问题
+    var sortCache = opCache.getVal(opCache.getTableKeyId(options.id), null);
+    if (sortCache) {
+      // 获取第一个 cols 是否为展开图标列
+      colArr.forEach(function (item, i) {
+        if (colArr[0].isOpenCol) {
+          i !== 0 && allBySort.push(item);
+        } else {
+          allBySort.push(item)
+        }
+      });
+      options.openCols.forEach(function (item, i) {
+        item.isOpenColsItem = true;
+        allBySort.push(item)
+      });
+
+      allBySort.forEach(function (item) {
+        if (item.title) {
+          var cache = sortCache[item.title];
+          if (!cache) {
+            item.isOpenColsItem ? openColsBySort.push(item) : colsBySort.push(item);
+            return;
+          }
+
+          // 1、处于显示状态 则放到普通列
+          if (cache.isShow) {
+            item.opCacheSort = cache.sort;
+            // 属性转换
+            if (item.isOpenColsItem && item.onDraw) {
+              item.templet = item.onDraw;
+              delete item['onDraw'];
+            }
+            colsBySort.push(item);
+          } else {
+            // 2、放到展开列
+            item.opCacheSort = cache.sort;
+            // 属性转换
+            if (!item.isOpenColsItem && item.templet) {
+              item.onDraw = item.templet;
+              delete item['templet'];
+            }
+            openColsBySort.push(item);
+          }
+        } else {
+          // 3、没有唯一标识（field）的列，让他们回到自己的数组里
+          item.isOpenColsItem ? openColsBySort.push(item) : colsBySort.push(item);
+        }
+      });
+
+      colsBySort.sort(function (a, b) {
+        return parseInt(a.opCacheSort) - parseInt(b.opCacheSort);
+      });
+
+      openColsBySort.sort(function (a, b) {
+        return parseInt(a.opCacheSort) - parseInt(b.opCacheSort);
+      });
+
+      if (colArr[0].isOpenCol) {
+        colsBySort.splice(options.openColumnIndex, 0, colArr[0]);
+      }
+
+      // 重新赋值持久化内容
+      options.cols[0] = colsBySort;
+      options.openCols = openColsBySort;
+    }
 
     //  2、表格Render
     options.table = table.render(
@@ -303,34 +402,40 @@ layui.define(['form', 'table'], function (exports) {
           }
         }, options));
 
+    childTableObj[singleElem] = options;
 
     // 3、展开事件
     function initExpandedListener() {
+      initHelpListener();
       if (!options.openVisible) {
         return;
       }
 
-      $("." + getOpenClickClass(options.elem, true))
+      var openIconDom = $("." + getOpenClickClass(options.elem, true))
           .parent()
           .unbind("click")
           .click(function (e) {
             layui.stope(e);
-
             var that = $(this).children()
                 , _this = this
+                , optId = that.attr("elem")
                 , itemIndex = parseInt(that.attr("data"))
-                , bindOpenData = openItemData[that.attr("elem")][itemIndex]
+                , bindOpenData = openItemData[optId][itemIndex]
                 , status = that.attr(KEY_STATUS) === 'on'
                 // 操作倒三角
                 , dowDom = that.parent().parent().parent().parent().find(".opTable-open-dow")
                 // 展开的tr
-                , addTD = that.parent().parent().parent().parent().find(".opTable-open-td"),
+                , addTD = that.parent().parent().parent().parent().find(".opTable-open-td")
                 // 行点击Class
-                itemClickClass = options.elem.replace("#", '').replace(".", '') + '-opTable-open-item-div';
+                , itemClickClass = optId + '-opTable-open-item-div'
+                , options = childTableObj[optId].config || childTableObj[optId]
+                , openCols = options.openCols
+                , colArr = options.cols[0]
+                // 子表ID
+                , childTableId;
 
             function initOnClose() {
-              options.onClose && options.onClose(bindOpenData, itemIndex)
-              options.childTable = null;
+              options.onClose && options.onClose(bindOpenData, itemIndex);
             }
 
             // 关闭全部
@@ -412,17 +517,28 @@ layui.define(['form', 'table'], function (exports) {
             // 1、从网络获取
             if (openNetwork) {
               loadNetwork();
-            } else if (openTable) {
+            }
+            // 2、展开显示表格
+            else if (openTable) {
               if (typeof openTable !== "function") {
                 throw  "OPTable: openTable attribute is function ";
               }
-
               var tableOptions = openTable(bindOpenData);
-              var id = tableOptions.elem.replace("#", '').replace(".", '');
-              //2、展开显示表格
+              tableOptions.layuiDone = tableOptions.done;
+              tableOptions.done = function (res, curr, count) {
+                // 子表行聚焦向上传递问题
+                $(".opTable-open-td tr").hover(function (e) {
+                  layui.stope(e)
+                });
+                // 子表排序
+                tableOptions.layuiDone && tableOptions.layuiDone(res, curr, count);
+              };
+
+              childTableId = tableOptions.elem.replace("#", '').replace(".", '');
+
               divContent
                   .empty()
-                  .append("<table id='" + id + "' lay-filter='" + id + "'></table>")
+                  .append("<table id='" + childTableId + "' lay-filter='" + childTableId + "'></table>")
                   .css({
                     "padding": "0 10px 0 50px", "margin-left": "0", "width":
                         _this.addTR.width()
@@ -431,11 +547,11 @@ layui.define(['form', 'table'], function (exports) {
 
               // 设置展开表格颜色为浅色背景
               addTD.css("cssText", "background-color:#FCFCFC!important");
-
-              options.childTable = layui.table.render(tableOptions);
-            } else {
-              //  3、从左到右依次排列 Item 默认风格
-              openCols.forEach(function (val, index) {
+              childTableObj[childTableId] = layui.opTable.render(tableOptions);
+            }
+            // 3、从左到右依次排列 Item 默认风格
+            else {
+              openCols.forEach(function (val) {
                 appendItem(val, bindOpenData);
               });
               divContent.append(html.join(''));
@@ -447,7 +563,6 @@ layui.define(['form', 'table'], function (exports) {
               divContent.empty()
                   .append('<div class="opTable-network-message" ><i class="layui-icon layui-icon-loading layui-icon layui-anim layui-anim-rotate layui-anim-loop" data-anim="layui-anim-rotate layui-anim-loop"></i></div>');
               _this.addTR.find("div").slideDown(options.slideDownTime);
-
 
               openNetwork.onNetwork(bindOpenData
                   //加载成功
@@ -472,25 +587,31 @@ layui.define(['form', 'table'], function (exports) {
                   })
             }
 
-
             /**
              * 添加默认排版风格 item
              * @param colsItem  cols配置信息
              * @param openData  展开数据
              */
             function appendItem(colsItem, openData) {
+              // 显示帮助图标
+              if (colsItem.opHelp) {
+                colsItem.title = colsItem.title.indexOf('opTable-span-help') === -1
+                    ? colsItem.title + '<span class="opTable-span-help" single="' + singleElem + colsItem.field + '"></span>'
+                    : colsItem.title;
+                openTitleHelpOption[singleElem + colsItem.field] = colsItem.opHelp;
+              }
+
               //  1、自定义模板
               if (colsItem.templet) {
-                html.push("<div id='" + colsItem.field + "' class='opTable-open-item-div " + itemClickClass + "' opOrientation='" + options.opOrientation + "'>")
+                html.push("<div id='" + colsItem.field + "' class='opTable-open-item-div " + itemClickClass + "' index='" + itemIndex + "' opOrientation='" + options.opOrientation + "'>")
                 html.push(colsItem.templet(openData));
                 html.push("</div>")
                 //  2、可下拉选择类型
               } else if (colsItem.type && colsItem.type === 'select') {
-                var child = ["<div id='" + colsItem.field + "' class='opTable-open-item-div " + itemClickClass + "' opOrientation='" + options.opOrientation + "' >"];
+                var child = ["<div id='" + colsItem.field + "' class='opTable-open-item-div " + itemClickClass + "' index='" + itemIndex + "' opOrientation='" + options.opOrientation + "' >"];
                 child.push("<span style='color: #99a9bf'>" + colsItem["title"] + "：</span>");
                 child.push("<div class='layui-input-inline'><select  lay-filter='" + colsItem.field + "'>");
-                colsItem.items.forEach(function (it) {
-                  it = colsItem.onDraw(it, openData);
+                colsItem.items(openData).forEach(function (it) {
                   child.push("<option value='" + it.id + "' ");
                   child.push(it.isSelect ? " selected='selected' " : "");
                   child.push(" >" + it.value + "</option>");
@@ -499,11 +620,10 @@ layui.define(['form', 'table'], function (exports) {
                 child.push("</div>");
                 html.push(child.join(""));
                 setTimeout(function () {
-                  form.render();
+                  layui.form.render();
                   //  监听 select 修改
-                  form.on('select(' + colsItem.field + ')', function (data) {
-
-                    if (options.onEdit && colsItem.isEdit(data, openData)) {
+                  layui.form.on('select(' + colsItem.field + ')', function (data) {
+                    if (options.onEdit && colsItem.isEdit && colsItem.isEdit(data, openData)) {
                       var json = {};
                       json.value = data.value;
                       json.field = colsItem.field;
@@ -518,9 +638,9 @@ layui.define(['form', 'table'], function (exports) {
                 // 处理null字符串问题
                 text = text || "";
                 // 3、默认类型
-                html.push("<div id='" + colsItem.field + "' class='opTable-open-item-div " + itemClickClass + "' opOrientation='" + options.opOrientation + "'>");
+                html.push("<div id='" + colsItem.field + "' class='opTable-open-item-div " + itemClickClass + "' index='" + itemIndex + "' opOrientation='" + options.opOrientation + "'>");
                 html.push("<span class='opTable-item-title'>" + colsItem["title"] + "：</span>");
-                html.push((colsItem.onEdit ?
+                html.push((colsItem.edit ?
                         ("<input  class='opTable-exp-value opTable-exp-value-edit' autocomplete='off' name='" + colsItem["field"] + "' value='" + text + "'/>")
                         : ("<span class='opTable-exp-value' >" + text + "</span>")
                 ));
@@ -553,16 +673,17 @@ layui.define(['form', 'table'], function (exports) {
                   })
             }
 
-
             if (options.onItemClick) {
               $("." + itemClickClass)
                   .unbind("click")
                   .click(function (e) {
                     var field = $(this).attr("id");
+                    // 根据下标获取行数据
+                    var lineData = openItemData[getOpenClickClass(options.elem, false)][$(this).attr("index")];
                     options.onItemClick({
-                      lineData: bindOpenData,
+                      lineData: lineData,
                       field: field,
-                      value: bindOpenData[field],
+                      value: lineData[field],
                       div: $(this),
                       e: e
                     });
@@ -573,14 +694,83 @@ layui.define(['form', 'table'], function (exports) {
             that.attr(KEY_STATUS, ON);
 
             // 创建成功回调
-            options.onInitSuccess && options.onInitSuccess(bindOpenData, itemIndex, this.addTR);
+            options.onInitSuccess && options.onInitSuccess(bindOpenData, itemIndex, this.addTR, childTableObj[childTableId]);
             setTimeout(function () {
               // 展开回调
-              options.onOpen && options.onOpen(bindOpenData, itemIndex, this.addTR);
+              options.onOpen && options.onOpen(bindOpenData, itemIndex, that.addTR, childTableObj[childTableId]);
+              initHelpListener();
             }, options.slideDownTime);
 
           });
 
+
+      // 列显示配置
+      openIconDom.parents('.layui-table-view')
+          .find('.layui-table-tool>.layui-table-tool-self > div[lay-event="LAYTABLE_COLS"]')
+          .eq(0)
+          .unbind("click")
+          .attr("elem", singleElem)
+          .on('click', function () {
+            var dom = $(this);
+            setTimeout(function () {
+              var ul = dom.find("ul"), localOpt = childTableObj[dom.attr("elem")];
+              if (!localOpt.openCols) {
+                return;
+              }
+              var html = [];
+              localOpt.cols[0].forEach(function (item) {
+                if (item.title && item.toolbar) {
+                  html.push('<li>');
+                  html.push('<input type="checkbox" name="' + item.title + '" title="' + item.title + '" checked="checked" lay-skin="primary"/>');
+                  html.push('</li>');
+                }
+              });
+              localOpt.openCols.forEach(function (item) {
+                if (item.title) {
+                  // 获取文本
+                  var title = $("<div>" + item.title + "</div>").text();
+                  html.push('<li>');
+                  html.push('<i class="opTable-i-table-open"></i>');
+                  html.push("<div style='display: inline-block;margin-left: 12px'>");
+                  html.push('<input type="checkbox" name="' + title + '" title="' + title + '" lay-skin="primary"/>');
+                  html.push("</div>");
+                  html.push('</li>');
+                }
+              });
+
+              ul.append(html.join(""));
+              ul.append(
+                  '<div class="op-edit-field-btn">'
+                  + '<button type="button" class="layui-btn layui-btn-xs layui-btn-warm">重置</button>'
+                  + '<button type="button" class="layui-btn layui-btn-xs layui-btn-normal">保存</button>'
+                  + '</div>'
+              );
+              layui.form.render('checkbox');
+              Sortable.create(ul[0]);
+
+              ul.find('.op-edit-field-btn button').unbind("click").click(function () {
+                var singKey = opCache.getTableKeyId(localOpt.id);
+                if ($(this).text() === '重置') {
+                  opCache.setVal(singKey, []);
+                  layer.msg("成功，刷新生效。");
+                } else {
+                  var inputs = ul.find("input");
+                  var sort = {};
+                  inputs.each(function (i) {
+                    var item = inputs.eq(i);
+                    sort[item.attr("title")] = {
+                      sort: i,
+                      isShow: item.parent().find(".layui-form-checked").length > 0
+                    };
+                  });
+
+                  opCache.setVal(singKey, sort);
+                  layer.msg("成功，刷新生效。");
+                }
+              })
+
+            }, 40);
+          });
 
       // (展开|关闭)全部
       $("." + getOpenAllClickClass(options.elem))
@@ -588,6 +778,9 @@ layui.define(['form', 'table'], function (exports) {
           .parent()
           .unbind("click")
           .click(function () {
+            if (!options.isOpenAllClick) {
+              return
+            }
             var tag = $(this).find("i").eq(0), status = tag.attr(KEY_STATUS);
             if (status === ON) {
               tag.addClass("opTable-open-up")
@@ -602,7 +795,24 @@ layui.define(['form', 'table'], function (exports) {
               options.thisIns.openAll();
             }
 
-          })
+          });
+    }
+
+    // 弹出帮助提示
+    function initHelpListener() {
+      $(".opTable-span-help").unbind("click").click(function (e) {
+        layui.stope(e)
+        var that = $(this);
+        var opt = openTitleHelpOption[that.attr("single")];
+        var index = layer.tips(opt.text + "<span class='op-span-help-close'>关闭</span>", that.parent(), $.extend({
+          tips: 3, time: 40000, success: function () {
+            $(".op-span-help-close").click(function () {
+              layer.close(index);
+            })
+          }
+        }, opt.tipOpt))
+      });
+
     }
 
     //  4、监听排序事件
@@ -610,14 +820,21 @@ layui.define(['form', 'table'], function (exports) {
 
     //  5、监听表格排序
     table.on('sort(' + elem + ')', function (obj) {
-      options.onSort && options.onSort(obj)
+      options.onSort && options.onSort(obj);
       // 重新绑定事件
       initExpandedListener();
     });
 
     //  6、单元格编辑
     layui.table.on('edit(' + elem + ')', function (obj) {
-      options.onEdit && options.onEdit(obj)
+      if (!isEditListener) {
+        return;
+      }
+      isEditListener = false;
+      options.onEdit && options.onEdit(obj);
+      setTimeout(function () {
+        isEditListener = true;
+      }, 100);
     });
 
   };
@@ -630,9 +847,7 @@ layui.define(['form', 'table'], function (exports) {
     return ex;
   };
 
-  //加载组件所需样式
-  layui.link(layui.cache.base + 'plugins/opTable/opTable.css?v=1' + VERSION, function () {
-  }, 'opTable');
-
-  exports('opTable', opTable);
+  opTable.openTableVersion = VERSION;
+  opTable.childTableObj = childTableObj;
+  exports(MOD_NAME, opTable);
 });

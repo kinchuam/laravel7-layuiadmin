@@ -51,25 +51,39 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
-        if($request->is('api/*')){
-            $response = [];
-            $error = $this->convertExceptionToResponse($exception);
-            $response['status'] = $error->getStatusCode();
-            $response['msg'] = 'something error';
-            if(config('app.debug')) {
-                $response['msg'] = empty($exception->getMessage()) ? 'request error' : $exception->getMessage();
-                if($error->getStatusCode() >= 500) {
-                    if(config('app.debug')) {
-                        $response['trace'] = $exception->getTraceAsString();
-                        $response['code'] = $exception->getCode();
-                    }
-                }
-            }
-            $response['data'] = [];
-            return response()->json($response, $error->getStatusCode());
-        }else{
-            return parent::render($request, $exception);
+        return $request->expectsJson()
+            ? $this->AjaxResponse($exception)
+            : parent::render($request, $exception);
+    }
+
+    protected function AjaxResponse($exception): \Illuminate\Http\JsonResponse
+    {
+        $response = [
+            "status" => 'error',
+            "code" => 0,
+            "message" => 'something error',
+            "data" => (object) [],
+        ];
+        if ($exception instanceof \Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException) {
+            $response["code"] = $exception->getStatusCode();
+            $response["message"] = $exception->getMessage();
+            return response()->json($response);
         }
+        if ($exception instanceof \Illuminate\Validation\ValidationException) {
+            $response["code"] = 422;
+            $response["message"] = $exception->validator->errors()->first();
+            return response()->json($response);
+        }
+        $error = $this->convertExceptionToResponse($exception);
+        $response["code"] = $error->getStatusCode();
+        if(config('app.debug')) {
+            $response["message"] = empty($exception->getMessage()) ? 'something error' : $exception->getMessage();
+            if($response["code"] >= 500) {
+                $response["code"] = $exception->getCode();
+                //$response["error"] = $exception->getTraceAsString();
+            }
+        }
+        return response()->json($response);
     }
 
     /**

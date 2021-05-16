@@ -14,12 +14,14 @@ class CreateUsersLoginLogTable extends Migration
     public function up()
     {
         Schema::create('users_login_log', function (Blueprint $table) {
-            $table->bigIncrements('id')->index();
-            $table->uuid('uuid')->index();
-            $table->string('ip',30)->nullable();
-            $table->mediumText('ipData');
-            $table->text('agent');
-            $table->string('message');
+            $table->bigIncrements('id');
+            $table->string('username',120)->default('')->index();
+            $table->ipAddress('ip')->default('')->index();
+            $table->string('message')->default('');
+            $table->string('platform',100)->default('');
+            $table->string('browser',100)->default('');
+            $table->string('ip_data', 800)->default('');
+            $table->mediumText('agent');
             $table->timestamps();
         });
     }

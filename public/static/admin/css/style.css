@@ -65,11 +65,11 @@ header .buttons-wrapper div.buttons div a:hover {
 
 .layadmin-carousel.layui-carousel > [carousel-item] > *,.layadmin-carousel.layui-carousel{ background: #ffffff;}
 .layadmin-env{ min-height: auto;}
-.must::before {content: "*";position: absolute;right: 5px;top: 10px;color: #eb6060;font-size: 12px;}
+.must::before {content: "*";color: #eb6060;font-size: 12px;}
 .layui-input-block{color: #999;}
 
 .admin_user{ position: relative;padding-right: 115px;}
-.admin_user .admin_user_rght{ position: absolute;width: 100px;top: 50%;right: 0;margin-top: -46.5px;}
+.admin_user .admin_user_rght{ position: absolute;width: 140px;top: 50%;right: 0;margin-top: -46.5px;}
 .admin_user .headimg{ position: relative;  width: 63px;height: 63px;border-radius: 50%;margin: 0 auto;}
 .admin_user .headimg i{ position: absolute;left: -3px;top: -3px;bottom: -3px;right: -3px;border: 4px solid #ecab18;border-right-color: #009688;border-bottom-color: #009688; border-radius: 50%;-webkit-transition: all .5s;transition: all .5s;}
 .admin_user .headimg a{ position: relative;z-index: 1;}
@@ -115,13 +115,14 @@ header .buttons-wrapper div.buttons div a:hover {
 .goods-spec-many .goods-sku .spec-sku-tabel input.ipt-w80 { width: 80px; }
 .spec-group-add-item label{width: auto;}
 .input-group-addon,.layui-form-mid{margin-right: auto;padding: 8px 15px!important;background-color: #fff;border: 1px solid #efefef;}
-.layui-upload-box li{width: 145px;height: auto;float: left;position: relative;overflow: hidden;margin: auto 10px 10px auto;}
-.layui-upload-box li img{width: 120px;border:1px solid #ddd;}
+.layui-upload-box li{width: auto;height: auto;float: left;position: relative;overflow: hidden;margin: auto 10px 10px auto;}
+.layui-upload-box li img{width: 120px;max-height: 135px;border:1px solid #ddd;}
 .layui-upload-box li p{width: 100%;height: 22px;font-size: 12px;position: absolute;left: 0;bottom: 0;line-height: 22px;text-align: center;color: #fff;background-color: #333;opacity: 0.6;}
 .layui-upload-box li i{display: block;position: absolute;text-align: center;top: 0;right:0;cursor: pointer;font-size: 20px;}
 .input-group{margin-top: 7px;min-width: 135px;max-width: 100%;position: relative;}
 .input-group img{width: 110px;border:1px solid #ddd;}
 .input-group i{display: block;position: absolute;text-align: center;top: 0;right:0;cursor: pointer;font-size: 20px;}
+.layui-upload-box .icon-delete {color: white;background-color: rgba(0,0,0,0.5);}
 .table-condensed .input-sm{width: 65% !important;}
 
 
@@ -394,12 +395,12 @@ tfoot .price-inner{
 	line-height: 20px;
 	margin-bottom: 15px;
 }
-label {
+/*label {
 	display: inline-block;
 	max-width: 100%;
 	margin-bottom: 5px;
 	font-weight: 700;
-}
+}*/
 ul, li, dl, dd, dt, p, ol, h1, h2, h3, h4, h5, img {
 	padding: 0;
 	margin: 0;
@@ -449,3 +450,13 @@ body .layui-layout-admin .footer-demo{margin-top:90px;height: 40px; line-height:
 .footer-demo .site-union{position: relative; top: -5px;}
 .footer-demo .site-union .site-union-desc{margin-bottom: 0; padding-right: 0;}
 .footer-demo .site-union a[sponsor] img{position: relative; top: 3px;}
+
+.cate-box {margin-bottom: 15px;padding-bottom:10px;border-bottom: 1px solid #f0f0f0 }
+.cate-box dt {margin-bottom: 10px;}
+.cate-box dt .cate-first {padding:10px 20px}
+.cate-box dd {padding:0 50px}
+.cate-box dd .cate-second {margin-bottom: 10px}
+.cate-box dd .cate-third {padding:0 40px;margin-bottom: 10px}
+
+.fromPage .layui-form { padding: 20px 30px 0 0; }
+.layui-layer-btn-c { text-align: center !important;}

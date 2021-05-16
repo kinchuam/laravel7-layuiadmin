@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Helpers\Decomposer;
+use App\Models\ActivityLog;
+use App\Models\Attachment;
 use App\Models\Site;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Redis;
 
 class SiteController extends Controller
 {
@@ -18,95 +18,116 @@ class SiteController extends Controller
      */
     public function index()
     {
-        $sitekey = 'website';
-        $config = Site::getPluginset($sitekey);
-        return view('admin.site.index',compact('config','sitekey'));
+        $siteKey = 'website';
+        $config = Site::getPluginSet($siteKey);
+        return view('admin.site.index', compact('config','siteKey'));
     }
 
     public function attachment()
     {
-        $sitekey = 'attachment.set';
-        $config = Site::getPluginset($sitekey);
-
-        $config['file_type'] = !empty($config['file_type'])?explode('|',$config['file_type']):["mp3","txt"];
-        $config['image_type'] = !empty($config['image_type'])?explode('|',$config['image_type']):["png", "jpg", "gif","jpeg","bmp"];
-
-        $config['file_size'] = empty($config['file_size'])?2*1024:$config['file_size'];
-        $config['image_size'] = empty($config['image_size'])?2*1024:$config['image_size'];
-        return view('admin.site.attachment',compact('sitekey','config'));
+        $siteKey = 'attachment.set';
+        $config = Site::getPluginSet($siteKey);
+        $config['image_size'] = $config['image_size'] ?? Attachment::image_size;
+        $config['image_type'] = isset($config['image_type']) ? explode('|', $config['image_type']) : Attachment::image_type;
+        $config['file_size'] = $config['file_size'] ?? Attachment::file_size;
+        $config['file_type'] = isset($config['file_type']) ? explode('|', $config['file_type']) : Attachment::file_type;
+        return view('admin.site.attachment', compact('siteKey','config'));
     }
 
     public function optimize()
     {
-        $composerArray = Decomposer::getComposerArray();
-        $packages = Decomposer::getPackagesAndDependencies($composerArray['require']);
-        $laravelEnv = Decomposer::getLaravelEnv();
-        $serverEnv = Decomposer::getServerEnv();
-        $serverExtras = Decomposer::getServerExtras();
-        $laravelExtras = Decomposer::getLaravelExtras();
-        $extraStats = Decomposer::getExtraStats();
+        $json = file_get_contents(base_path('composer.json'));
+        $dependencies = json_decode($json, true)['require'];
+        $envs = [
+            ['name' => 'PHP version', 'type'=>'php',  'value' => 'PHP/'.PHP_VERSION],
+            ['name' => 'Laravel version',   'value' => app()->version()],
+            ['name' => 'CGI',               'value' => php_sapi_name()],
+            ['name' => 'Uname',             'value' => php_uname()],
+            ['name' => 'Server',            'value' => $_SERVER['SERVER_SOFTWARE']],
 
-        return view('admin.site.optimize', compact('packages', 'laravelEnv', 'serverEnv', 'extraStats', 'serverExtras', 'laravelExtras'));
-    }
+            ['name' => 'Cache driver',      'value' => config('cache.default')],
+            ['name' => 'Session driver',    'value' => config('session.driver')],
+            ['name' => 'Queue driver',      'value' => config('queue.default')],
 
-    public function datecache()
-    {
-        return view('admin.site.datecache');
-    }
-
-    public function clearcache(Request $request)
-    {
-        $type = $request->post('type');
-        if (!empty($type)) {
-
-            if (isset($type['cache'])){
-                Artisan::call('cache:clear');
+            ['name' => 'Timezone',          'value' => config('app.timezone')],
+            ['name' => 'Locale',            'value' => config('app.locale')],
+            ['name' => 'Env',               'value' => config('app.env')],
+            ['name' => 'URL',               'value' => config('app.url')],
+        ];
+        $extras = [];
+        if (strtolower(config('cache.default')) == 'redis') {
+            if ($Memory = app('redis')->info()) {
+                $extras['redis']['extra'] = '消耗峰值：' . round($Memory['used_memory_peak'] / 1048576, 2) . ' M/ 内存总量：' . round($Memory['used_memory'] / 1048576, 2) . ' M';
             }
-            if (isset($type['view'])){
-                Artisan::call('view:clear');
-            }
-            if (isset($type['config'])){
-                Artisan::call('config:clear');
-            }
-            if (extension_loaded('Zend OPcache')) {
-                opcache_reset();
-            }
-            return back()->with(['status'=>'更新缓存成功']);
         }
-        return back()->with(['status'=>'请选择需要清除选项']);
+        if (function_exists('memory_get_usage')) {
+            $extras['php']['extra'] = '内存量：' . round(memory_get_usage()/1024/1024, 2).' M';
+        }
+        return view('admin.site.optimize', compact('dependencies','envs','extras'));
+    }
+
+    public function dateCache()
+    {
+        return view('admin.site.dateCache');
+    }
+
+    public function clearCache(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $type = $request->input('type');
+        if (!empty($type)) {
+            $default = config('cache.default');$redis = null;
+            if (strtolower($default) == 'redis') {
+                $redis = app('redis');
+            }
+            $str = [];
+            if (isset($type['cache'])) {
+                !empty($redis) ? $redis->connection('cache')->flushdb() : Artisan::call('cache:clear');
+                array_push($str, '数据缓存');
+            }
+            if (isset($type['picture'])) {
+                array_push($str, '图片缓存');
+            }
+            if (isset($type['view'])) {
+                Artisan::call('view:clear');
+                array_push($str, '视图缓存');
+            }
+            if (isset($type['route'])) {
+                Artisan::call('route:clear');
+                Artisan::call('route:cache');
+                array_push($str, '路由缓存');
+            }
+            if (isset($type['config'])) {
+                Artisan::call('config:clear');
+                Artisan::call('config:cache');
+                array_push($str, '配置缓存');
+            }
+            ActivityLog::addLog('清除'. implode('、', $str), $type);
+            return response()->json(['code'=>0, 'message'=>'操作成功']);
+        }
+        return response()->json(['code'=>-2, 'message'=>'系统错误']);
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function update(Request $request)
+    public function update(Request $request): \Illuminate\Http\JsonResponse
     {
         $data = $request->except(['_token','_method']);
         if (empty($data)) {
-            if ($request->ajax()) {
-                return response()->json(['status' => 'fail', 'message' => '无数据更新']);
-            }
-            return back()->withErrors(['status'=>'无数据更新']);
+            return response()->json(['status' => 'fail', 'message' => '无数据更新']);
         }
 
-        $key = $data['sitekey'];
-        unset($data['sitekey']);
-        $rels = Site::updatePluginset($key,$data);
-        if ($rels) {
-            if ($request->ajax()) {
-                return response()->json(['status' => 'success', 'message' => '更新成功']);
-            }
-            return back()->with(['status'=>'更新成功']);
+        $key = $data['siteKey'];
+        unset($data['siteKey']);
+        $reals = Site::updatePluginSet($key, $data);
+        if ($reals) {
+            return response()->json(['code' => 0, 'message' => '更新成功']);
         }
-        if ($request->ajax()) {
-            return response()->json(['status' => 'fail', 'message' => '系统错误']);
-        }
-        return back()->withErrors('系统错误');
-
+        return response()->json(['code' => -2, 'message' => '系统错误']);
     }
 
 }

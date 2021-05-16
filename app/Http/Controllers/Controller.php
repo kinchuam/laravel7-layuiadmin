@@ -19,26 +19,10 @@ class Controller extends BaseController
             $value
         );
     }
-
-    public function app_json($data = [],$status = 0)
-    {
-        $ret = [];
-        if (!isset($data['error'])){
-            $ret["error"] = 0;
-        }
-        if (!isset($data['message'])){
-            $ret["message"] = 'succeed';
-        }
-        if ($status>0){
-            return response()->json(array_merge($ret, $data),$status);
-        }
-        return response()->json(array_merge($ret, $data));
-    }
-
     /**
      * 处理权限分类
      */
-    public function tree($list=[], $pk='id', $pid = 'parent_id', $child = '_child', $root = 0)
+    public function tree($list=[], $pk='id', $pid = 'parent_id', $child = '_child', $root = 0): array
     {
         // 创建Tree
         $tree = array();

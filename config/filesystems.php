@@ -64,13 +64,6 @@ return [
             'url' => env('AWS_URL'),
         ],
 
-        'localupload' => [
-            'driver' => 'local',
-            'root' => public_path('uploads'),
-            'url' => env('APP_URL').'/',
-            'visibility' => 'public',
-        ],
-
         'qiniu' => [
             'driver'  => 'qiniu',
             'domains' => [

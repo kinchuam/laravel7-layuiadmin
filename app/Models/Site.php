@@ -4,45 +4,62 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 
 class Site extends Model
 {
     protected $table = 'sites';
     protected $fillable = ['key', 'value'];
-    public $desc = '配置表';
-    //获取设置
-    public static function getPluginset($key = '')
+
+    /**
+     * @param null $key
+     * @return array|false|mixed
+     */
+    public static function getPluginSet($key = null)
     {
         if (empty($key)){ return false; }
-        $set = Cache::remember($key, Carbon::now()->addMinutes(env('APP_CONFIG_CACHE',120)), function () use($key) {
-            return Site::select('key', 'value')->where('key', $key)->first(['key','value']);
-        });
-        if (!empty($set['value'])){ return json_decode($set['value'],true); }
+        try {
+            $set = cache()->remember($key, Carbon::now()->addMinutes(config('custom.config_cache_time')), function () use($key) {
+                return self::where('key', $key)->first(['key','value']);
+            });
+            if (!empty($set['value'])){
+                return json_decode($set['value'],true);
+            }
+        }catch (\Exception $e) {
+            logger()->error('getPluginSet: '.$key.' error: '.$e->getMessage());
+        }
         return [];
     }
 
-    //更新设置
-    public static function updatePluginset($key = '', $values = [])
+    /**
+     * @param null $key
+     * @param array $values
+     * @return bool
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public static function updatePluginSet($key = null, $values = []): bool
     {
         if (empty($key)){ return false; }
-        $setdata = Site::where('key', $key)->first(['key','value']);
-        if (empty($setdata)) {
-            $a = ['key' => $key, 'value' => json_encode($values)];
-            Site::create($a);
-        } else {
-            $plugins = json_decode($setdata['value'],true);
-            if(!is_array($plugins)){ $plugins = []; }
-            foreach ($values as $ke => $va) {
-                if(!isset($plugins[$ke]) || !is_array($plugins[$ke])){
-                    $plugins[$ke] = [];
-                }
-                $plugins[$ke] = $va;
+        try {
+            $model = self::updateOrCreate(["key" => $key], [ "value" => json_encode($values) ]);
+            switch ($key) {
+                case 'website':
+                    $str = '站点配置';
+                    break;
+                case 'attachment.set':
+                    $str = '附件设置';
+                    break;
+                default:
+                    $str = '其他配置';
+                    break;
             }
-            $setdata->update(['value' => json_encode($plugins)]);
+            if (cache()->has($key)) {
+                cache()->forget($key);
+            }
+            return true;
+        }catch (\Exception $e) {
+            logger()->error('updatePluginSet: '.$key.' error: '.$e->getMessage());
         }
-        Cache::forget($key);
-        return true;
+        return false;
     }
 
 }

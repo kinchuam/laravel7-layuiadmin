@@ -1,0 +1,119 @@
+/* 文件库 */
+.file-library .layui-layer-title {
+    background-color: #fff;
+    border-bottom: none;
+    font-size: 1.6rem;
+    font-weight: 500; }
+.file-library .layui-layer-content {
+    padding: 0 .5rem;
+    user-select: none; }
+.file-library .layui-layer-content .file-group {
+    float: left;
+    width: 150px;
+    padding-top: 20px; }
+.file-library .layui-layer-content .file-group .nav-new {
+    overflow-y: auto;
+    max-height: 340px; }
+.file-library .layui-layer-content .file-group .nav-new li {
+    position: relative;
+    margin: .3rem 0;
+    padding: .4rem 2rem;
+    text-align: center;}
+/*.file-library .layui-layer-content .file-group .nav-new li a i.iconfont {
+    font-size: 1.4rem; }*/
+/*.file-library .layui-layer-content .file-group .nav-new li a.group-name {
+    color: #595961;
+    font-size: 1.3rem; }*/
+.file-library .layui-layer-content .file-group .nav-new li .group-edit {
+    display: none;
+    position: absolute;
+    left: .6rem; }
+.file-library .layui-layer-content .file-group .nav-new li .group-delete {
+    display: none;
+    position: absolute;
+    right: .6rem;
+    top: .4rem;
+}
+.file-library .layui-layer-content .file-group .nav-new li:hover, .file-library .layui-layer-content .file-group .nav-new li.active {
+    background: rgba(48, 145, 242, 0.1);
+    border-radius: 6px; }
+/*.file-library .layui-layer-content .file-group .nav-new li:hover .group-name, .file-library .layui-layer-content .file-group .nav-new li.active .group-name {
+    color: #0e90d2; }*/
+.file-library .layui-layer-content .file-group .nav-new li:hover .group-edit, .file-library .layui-layer-content .file-group .nav-new li:hover .group-delete {
+    display: inline; }
+.file-library .layui-layer-content .file-group a.group-add {
+    display: block;
+    margin-top: .7rem;
+    /*font-size: 1.2rem;*/
+    padding: 0 2.3rem;
+    text-align: center;}
+.file-library .layui-layer-content .file-list {
+    float: left; }
+.file-library .layui-layer-content .file-list .v-box-header {
+    padding: 0 2rem 0 1rem;
+    margin: 10px 0 10px; }
+.file-library .layui-layer-content .file-list .v-box-header .h-left .tpl-table-black-operation {
+    margin: 0 1rem; }
+.file-library .layui-layer-content .file-list .v-box-header .h-left .am-dropdown-toggle {
+    /*font-size: 1.2rem;*/ }
+.file-library .layui-layer-content .file-list .v-box-header .h-left .am-dropdown-content a {
+    /*font-size: 1.3rem;*/ }
+.file-library .layui-layer-content .file-list .v-box-header .h-rigth .upload-image .iconfont {
+    /*font-size: 1.2rem;*/ }
+.file-library .layui-layer-content .v-box-body {
+    width: 660px; }
+.file-library .layui-layer-content .v-box-body ul.file-list-item {
+    overflow-y: auto;
+    scrollbar-width: none;
+    height: 365px; }
+.file-library .layui-layer-content .v-box-body ul.file-list-item::-webkit-scrollbar {
+    display: none;
+}
+.file-library .layui-layer-content .v-box-body ul.file-list-item li {
+    position: relative;
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    float: left;
+    margin: 10px;
+    -webkit-transition: All 0.2s ease-in-out;
+    -moz-transition: All 0.2s ease-in-out;
+    -o-transition: All 0.2s ease-in-out;
+    transition: All 0.2s ease-in-out; }
+.file-library .layui-layer-content .v-box-body ul.file-list-item li:hover {
+    border: 1px solid #16bce2; }
+.file-library .layui-layer-content .v-box-body ul.file-list-item li .img-cover {
+    width: 120px;
+    height: 120px;
+    background: no-repeat center center / 100%; }
+.file-library .layui-layer-content .v-box-body ul.file-list-item li p.file-name {
+    margin: 5px 0 0 0;
+    width: 120px;
+    /*font-size: 1.3rem;*/ }
+.file-library .layui-layer-content .v-box-body ul.file-list-item li.active .select-mask {
+    display: block; }
+.file-library .layui-layer-content .v-box-body ul.file-list-item li .select-mask {
+    display: none;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.5);
+    text-align: center;
+    border-radius: 6px; }
+.file-library .layui-layer-content .v-box-body ul.file-list-item li .select-mask img {
+    position: absolute;
+    top: 50px;
+    left: 45px; }
+.file-library .layui-layer-content .v-box-body ul.pagination {
+    margin: 0; }
+.file-library .layui-layer-content .v-box-body ul.pagination > li > a, .file-library .layui-layer-content .v-box-body ul.pagination > li > span {
+    padding: .3rem .9rem;
+    /*font-size: 1.3rem;*/ }
+.layui-fluid{ margin: 0 !important; padding: 0 !important;  }
+.file-library {width: 100%;height: 475px;background: #fff;}
+.file-group .layui-menu {overflow:auto;overflow-x: hidden; height: 315px;scrollbar-width: none;}
+.file-group .layui-menu::-webkit-scrollbar { display: none; }
+.file-group {margin-top:5px;}

@@ -13,8 +13,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::group(['namespace'=>'Api'],function ($route){
-    $route->group(['prefix' => 'get'],function ($route){
-        $route->get('/index','IndexController@index');
-    });
+Route::group(['namespace' => 'Api', 'middleware' => 'operation'], function ($route){
+    $route->get('/', 'IndexController@index');
 });

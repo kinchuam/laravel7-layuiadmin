@@ -11,7 +11,7 @@ class UserUpdateRequest extends FormRequest
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -21,14 +21,14 @@ class UserUpdateRequest extends FormRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
-        $reture = [
+        $rules = [
             'username'  => 'required|min:4|max:14|unique:users,username,'.$this->get('id').',id',
         ];
         if ($this->get('password') || $this->get('password_confirmation')){
-            $reture['password'] = 'required|confirmed|min:6|max:14';
+            $rules['password'] = 'required|confirmed|min:6|max:14';
         }
-        return $reture;
+        return $rules;
     }
 }

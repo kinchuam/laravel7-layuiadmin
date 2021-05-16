@@ -12,17 +12,16 @@ class User extends Authenticatable
     use Notifiable,HasRoles;
     protected $table = 'users';
     protected $guard_name = 'admin';
-    public $desc = '用户表';
 
-    protected function serializeDate(DateTimeInterface $date)
+    protected $attributes = [
+        'phone' => '',
+        'email' => '',
+    ];
+
+    protected function serializeDate(DateTimeInterface $date): string
     {
         return $date->format($this->dateFormat ?: 'Y-m-d H:i:s');
     }
-
-    protected $attributes = [
-      'phone' => '',
-      'email' => '',
-    ];
 
     /**
      * The attributes that are mass assignable.
